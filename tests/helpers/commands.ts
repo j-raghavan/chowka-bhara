@@ -4,6 +4,7 @@ interface CmdInput {
   readonly type: CommandType;
   readonly playerId: string;
   readonly moveId?: string;
+  readonly color?: string;
   readonly displayName?: string;
   readonly reclaimToken?: string;
   readonly commandId?: string;

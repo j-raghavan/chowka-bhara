@@ -3,6 +3,7 @@
  * The single place that produces a new GameState (boundary rule B2).
  */
 import { FINISH_INDEX } from './board';
+import { isPaletteColor } from './config';
 import { grantsBonus, rollCowries } from './cowries';
 import { assignSidesAndPawns, CANONICAL_ORDER, newSeat } from './game-setup';
 import { computeSkipReason, generateLegalMoves } from './legal-moves';
@@ -65,6 +66,8 @@ function dispatch(state: GameState, command: GameCommand, env: DomainEnv): Step 
       return applySelectMove(state, command.playerId, command.moveId, env);
     case 'RESIGN':
       return applyResign(state, command.playerId, env);
+    case 'SET_COLOR':
+      return applySetColor(state, command.playerId, command.color, env);
     case 'CREATE_ROOM':
       return no('UNKNOWN_COMMAND'); // room creation is a transport op, not an in-state transition
     /* v8 ignore next 2 -- defensive: the command union above is exhaustive */
@@ -74,6 +77,18 @@ function dispatch(state: GameState, command: GameCommand, env: DomainEnv): Step 
 }
 
 // --- Lobby transitions ------------------------------------------------------
+
+function applySetColor(state: GameState, playerId: string, color: string, _env: DomainEnv): Step {
+  if (state.status !== 'lobby') return no('NOT_IN_LOBBY');
+  const player = state.players[playerId];
+  if (player === undefined) return no('PLAYER_NOT_FOUND');
+  if (!isPaletteColor(color)) return no('INVALID_COLOR');
+  if (Object.values(state.players).some((p) => p.id !== playerId && p.color === color)) {
+    return no('COLOR_TAKEN');
+  }
+  if (player.color === color) return ok(state); // idempotent
+  return ok({ ...state, players: { ...state.players, [playerId]: { ...player, color } } });
+}
 
 function applyJoin(state: GameState, playerId: string, displayName: string, env: DomainEnv): Step {
   if (state.status !== 'lobby') return no('NOT_IN_LOBBY');
@@ -160,7 +175,11 @@ function applyRoll(state: GameState, playerId: string, env: DomainEnv): Step {
   const legalMoves = generateLegalMoves(s);
   s = { ...s, legalMoves };
   const events: GameEvent[] = [
-    makeEvent('ROLL', env, playerId, { value: roll.value, openCount: roll.openCount }),
+    makeEvent('ROLL', env, playerId, {
+      value: roll.value,
+      openCount: roll.openCount,
+      faces: roll.faces,
+    }),
   ];
 
   if (legalMoves.length === 0) {

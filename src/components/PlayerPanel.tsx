@@ -1,4 +1,4 @@
-import { SIDE_COLORS, SIDE_LABEL } from '../ui/board-theme';
+import { SIDE_LABEL } from '../ui/board-theme';
 import type { GameState, Pawn } from '../domain/types';
 
 const STATE_TITLE: Record<Pawn['state'], string> = {
@@ -7,7 +7,13 @@ const STATE_TITLE: Record<Pawn['state'], string> = {
   finished: 'finished',
 };
 
-export function PlayerPanel({ state }: { state: GameState }) {
+export function PlayerPanel({
+  state,
+  recentHitPawnId,
+}: {
+  state: GameState;
+  recentHitPawnId?: string | null;
+}) {
   return (
     <div className="panel">
       <h2>Players</h2>
@@ -21,7 +27,7 @@ export function PlayerPanel({ state }: { state: GameState }) {
         const finished = pawns.filter((p) => p.state === 'finished').length;
         return (
           <div key={id} className={'player-row' + (isCurrent ? ' current' : '')}>
-            <span className="dot" style={{ background: SIDE_COLORS[player.side] }} />
+            <span className="dot" style={{ background: player.color }} />
             <span className="player-info">
               <strong>{player.displayName}</strong>
               <small>
@@ -35,8 +41,10 @@ export function PlayerPanel({ state }: { state: GameState }) {
               {pawns.map((p) => (
                 <span
                   key={p.id}
-                  className={`tray-pawn ${p.state}`}
-                  style={{ background: SIDE_COLORS[player.side] }}
+                  className={
+                    `tray-pawn ${p.state}` + (p.id === recentHitPawnId ? ' just-home' : '')
+                  }
+                  style={{ background: player.color }}
                   title={STATE_TITLE[p.state]}
                 />
               ))}

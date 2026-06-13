@@ -23,6 +23,7 @@ export interface RoomView {
   readonly roll: () => void;
   readonly selectMove: (moveId: string) => void;
   readonly resign: () => void;
+  readonly setColor: (color: string) => void;
   readonly goHome: () => void;
 }
 
@@ -131,6 +132,10 @@ export function useRoom(): RoomView {
     [act],
   );
   const resign = useCallback(() => act((svc, g, p) => void svc.resign(g, p)), [act]);
+  const setColor = useCallback(
+    (color: string) => act((svc, g, p) => void svc.setColor(g, p, color)),
+    [act],
+  );
   const goHome = useCallback(() => navigate('#/'), [navigate]);
 
   const isHost = state !== null && me !== null && state.hostId === me.playerId;
@@ -153,6 +158,7 @@ export function useRoom(): RoomView {
     roll,
     selectMove,
     resign,
+    setColor,
     goHome,
   };
 }

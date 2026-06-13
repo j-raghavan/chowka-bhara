@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board';
 import { CowrieRoll } from '../components/CowrieRoll';
 import { PlayerPanel } from '../components/PlayerPanel';
@@ -6,6 +6,7 @@ import { GameHistory } from '../components/GameHistory';
 import { RulesPanel } from '../components/RulesPanel';
 import { TurnBanner } from '../components/TurnBanner';
 import type { RoomView } from '../app/useRoom';
+import type { CowrieFace } from '../domain/types';
 
 const SKIP_TEXT: Record<string, string> = {
   'start-blocked': 'your start house was blocked',
@@ -18,6 +19,31 @@ const SKIP_TEXT: Record<string, string> = {
 export function GamePage({ room }: { room: RoomView }) {
   const { state, me, isMyTurn } = room;
   const [showRules, setShowRules] = useState(false);
+
+  // Hit animation (#8): when a new HIT appears in history, flash a toast and
+  // pulse the victim's pawn as it lands back in its home tray.
+  const [hitToast, setHitToast] = useState<string | null>(null);
+  const [recentHitPawnId, setRecentHitPawnId] = useState<string | null>(null);
+  const hits = (state?.history ?? []).filter((e) => e.type === 'HIT');
+  const latestHit = hits[hits.length - 1];
+  const seenHit = useRef<string | null>(latestHit?.id ?? null);
+  const hitTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!latestHit || latestHit.id === seenHit.current) return;
+    seenHit.current = latestHit.id;
+    const name = (id: string): string => state?.players[id]?.displayName ?? 'A player';
+    const by = latestHit.playerId ? name(latestHit.playerId) : 'A player';
+    const victim = name(String(latestHit.data?.['victimPlayerId'] ?? ''));
+    setHitToast(`💥 ${by} knocked ${victim}'s pawn home!`);
+    setRecentHitPawnId(String(latestHit.data?.['victimPawnId'] ?? '') || null);
+    window.clearTimeout(hitTimer.current);
+    hitTimer.current = window.setTimeout(() => {
+      setHitToast(null);
+      setRecentHitPawnId(null);
+    }, 2600);
+  }, [latestHit, state]);
+  useEffect(() => () => window.clearTimeout(hitTimer.current), []);
+
   if (state === null) return null;
 
   const playing = state.status === 'playing';
@@ -25,11 +51,11 @@ export function GamePage({ room }: { room: RoomView }) {
     playing && isMyTurn && state.currentRoll === null && state.winnerPlayerId === null;
   const interactive = playing && isMyTurn;
 
-  // The roll value to display: the live roll, or the last roll from history so a
-  // value is always visible — even when a no-move roll auto-skipped (clearing currentRoll).
+  // The faces to display: the live roll, or the last roll from history so the throw
+  // is always visible — even when a no-move roll auto-skipped (clearing currentRoll).
   const lastRoll = [...state.history].reverse().find((e) => e.type === 'ROLL');
-  const shownValue =
-    state.currentRoll?.value ?? (lastRoll ? Number(lastRoll.data?.['value']) : null);
+  const shownFaces =
+    state.currentRoll?.faces ?? (lastRoll?.data?.['faces'] as CowrieFace[] | undefined) ?? null;
   const rollIsLive = state.currentRoll !== null;
 
   // Surface the most recent skip for the local player (CB6-FR12).
@@ -47,6 +73,11 @@ export function GamePage({ room }: { room: RoomView }) {
 
   return (
     <div className="app-shell">
+      {hitToast && (
+        <div className="hit-toast" role="status">
+          {hitToast}
+        </div>
+      )}
       <TurnBanner state={state} />
       {mySkip && (
         <div className="turn-banner" style={{ background: 'rgba(255,180,80,0.25)' }}>
@@ -58,7 +89,7 @@ export function GamePage({ room }: { room: RoomView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="panel">
             <h2>{isMyTurn ? 'Your turn' : me?.spectator ? 'Spectating' : 'Waiting…'}</h2>
-            <CowrieRoll value={shownValue} live={rollIsLive} canRoll={canRoll} onRoll={room.roll} />
+            <CowrieRoll faces={shownFaces} live={rollIsLive} canRoll={canRoll} onRoll={room.roll} />
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
               <button className="btn secondary" onClick={() => setShowRules((v) => !v)}>
                 {showRules ? 'Hide rules' : 'Rules'}
@@ -75,7 +106,7 @@ export function GamePage({ room }: { room: RoomView }) {
               </button>
             </div>
           </div>
-          <PlayerPanel state={state} />
+          <PlayerPanel state={state} recentHitPawnId={recentHitPawnId} />
           {showRules && <RulesPanel />}
           <GameHistory state={state} />
         </div>

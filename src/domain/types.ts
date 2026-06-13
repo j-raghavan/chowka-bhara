@@ -161,7 +161,8 @@ export type CommandType =
   | 'START_GAME'
   | 'ROLL'
   | 'SELECT_MOVE'
-  | 'RESIGN';
+  | 'RESIGN'
+  | 'SET_COLOR';
 
 export interface BaseCommand {
   readonly commandId: string;
@@ -197,6 +198,10 @@ export interface SelectMoveCommand extends BaseCommand {
 export interface ResignCommand extends BaseCommand {
   readonly type: 'RESIGN';
 }
+export interface SetColorCommand extends BaseCommand {
+  readonly type: 'SET_COLOR';
+  readonly color: string;
+}
 
 export type GameCommand =
   | CreateRoomCommand
@@ -205,7 +210,8 @@ export type GameCommand =
   | StartGameCommand
   | RollCowriesCommand
   | SelectMoveCommand
-  | ResignCommand;
+  | ResignCommand
+  | SetColorCommand;
 
 // --- Reducer result envelope ------------------------------------------------
 
@@ -221,6 +227,8 @@ export type CommandRejectionCode =
   | 'GAME_OVER'
   | 'NOT_IN_LOBBY'
   | 'PLAYER_NOT_FOUND'
+  | 'INVALID_COLOR'
+  | 'COLOR_TAKEN'
   | 'UNKNOWN_COMMAND';
 
 export interface ApplyResult {

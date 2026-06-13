@@ -52,6 +52,32 @@ button {
   margin: 0 auto 1.6rem;
   width: min(92vw, 460px);
 }
+.lobby-panel {
+  max-width: 420px;
+  margin: 0 auto 1rem;
+  text-align: left;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 3px var(--shadow);
+  padding: 0;
+}
+.swatch.selected {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.swatch:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 .home-actions {
   display: flex;
   flex-wrap: wrap;
@@ -202,18 +228,67 @@ button {
   gap: 6px;
   justify-content: center;
   margin: 0.4rem 0;
+  transform-origin: center bottom;
+}
+/* Shake the "hand" of cowries while rolling */
+.cowrie-row.shaking {
+  animation: cowrie-shake 0.18s ease-in-out infinite;
+}
+/* Each shell drops/tumbles into place when a new throw is revealed */
+.cowrie-row:not(.shaking) .cowrie {
+  animation: cowrie-drop 0.32s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+@keyframes cowrie-shake {
+  0% {
+    transform: translate(0, 0) rotate(-4deg);
+  }
+  50% {
+    transform: translate(0, -6px) rotate(4deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(-4deg);
+  }
+}
+@keyframes cowrie-drop {
+  0% {
+    transform: translateY(-14px) rotate(-25deg) scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cowrie-row.shaking,
+  .cowrie-row:not(.shaking) .cowrie {
+    animation: none !important;
+  }
 }
 .cowrie {
+  position: relative;
   width: 26px;
-  height: 34px;
-  border-radius: 50% 50% 45% 45%;
-  border: 2px solid #b9a06a;
+  height: 32px;
+  border: 2px solid #9c7d4e;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.2);
 }
+/* Open = mouth up (counts toward the score): pale, ridged opening */
 .cowrie.open {
   background: #f3e7c4;
+  border-radius: 50% 50% 48% 48%;
 }
+.cowrie.open::after {
+  content: '';
+  position: absolute;
+  inset: 32% 30% 14%;
+  border-radius: 0 0 40% 40%;
+  background: #cdb487;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+/* Closed = shell down (rounded brown back, does not count) */
 .cowrie.closed {
-  background: #7a5b34;
+  background: radial-gradient(circle at 50% 35%, #9a734a, #6f4f2e);
+  border-radius: 48% 48% 50% 50%;
 }
 .roll-value {
   text-align: center;
@@ -287,6 +362,56 @@ button {
 .tray-pawn.finished {
   border-color: gold;
   box-shadow: 0 0 0 2px gold;
+}
+/* A pawn that was just knocked home pulses red briefly (#8) */
+.tray-pawn.just-home {
+  animation: pawn-knocked 0.5s ease-out 3;
+}
+@keyframes pawn-knocked {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.9);
+  }
+  40% {
+    transform: scale(1.5);
+    box-shadow: 0 0 0 5px rgba(255, 80, 80, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 80, 80, 0);
+  }
+}
+
+/* Hit announcement toast (#8) */
+.hit-toast {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: #b3261e;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.6rem 1.1rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px var(--shadow);
+  animation: toast-in 0.25s ease-out;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tray-pawn.just-home,
+  .hit-toast {
+    animation: none !important;
+  }
 }
 .history {
   max-height: 240px;

@@ -11,7 +11,7 @@ import {
   tileShade,
 } from '../ui/board-theme';
 import { CrownGlyph, PawnGlyph } from './glyphs';
-import type { Coord, GameState, LegalMove } from '../domain/types';
+import type { Coord, GameState, LegalMove, PlayerSide } from '../domain/types';
 
 interface Occupant {
   readonly color: string;
@@ -25,7 +25,7 @@ function buildOccupants(state: GameState): Map<string, Occupant> {
     const player = state.players[pawn.playerId];
     if (player === undefined) continue;
     map.set(coordKey(coordAt(player.side, pawn.pathIndex)), {
-      color: SIDE_COLORS[player.side],
+      color: player.color,
       label: player.side[0]!.toUpperCase(),
     });
   }
@@ -41,6 +41,11 @@ export interface BoardProps {
 export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const occupants = buildOccupants(state);
+
+  // A start house is painted in the colour of whoever holds that side (their chosen
+  // pawn colour), falling back to the default seat colour when no one is seated there.
+  const sideColor: Partial<Record<PlayerSide, string>> = {};
+  for (const player of Object.values(state.players)) sideColor[player.side] = player.color;
   const legalByCell = new Map<string, LegalMove>();
   if (interactive) for (const move of state.legalMoves) legalByCell.set(coordKey(move.to), move);
 
@@ -114,7 +119,9 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                   }
                 >
                   {role === 'center' && <CrownGlyph />}
-                  {role === 'start' && side && <PawnGlyph color={SIDE_COLORS[side]} />}
+                  {role === 'start' && side && (
+                    <PawnGlyph color={sideColor[side] ?? SIDE_COLORS[side]} />
+                  )}
                   {role === 'safe' && (
                     <span className="mark-x" aria-hidden="true">
                       ×

@@ -4,6 +4,7 @@ import { GameService } from '../../src/app/services/game-service';
 import type { GameState, PlayerSide } from '../../src/domain/types';
 import { envForRolls, makeEnv } from '../helpers/env';
 import { makePlayingState, withHasHit, withPawnAt } from '../helpers/state';
+import { PAWN_PALETTE } from '../../src/domain/config';
 
 async function seatRoom(service: GameService, names: string[]) {
   const created = await service.createRoom(names[0]!);
@@ -50,6 +51,15 @@ describe('start gating and side assignment (CB5-AC1..AC4)', () => {
     const { gameId, hostId, ids } = await seatRoom(service, ['a', 'b', 'c', 'd']);
     await service.start(gameId, hostId);
     expect(sidesOf(t.getState(gameId)!, ids)).toEqual(['south', 'east', 'north', 'west']);
+  });
+
+  it('sets a pawn color through the service', async () => {
+    const t = new FakeTransport(makeEnv());
+    const service = new GameService(t, makeEnv());
+    const created = await service.createRoom('a');
+    const res = await service.setColor(created.gameId, created.playerId, PAWN_PALETTE[5]!);
+    expect(res.accepted).toBe(true);
+    expect(t.getState(created.gameId)!.players[created.playerId]!.color).toBe(PAWN_PALETTE[5]);
   });
 
   it('rejects a non-host start (CB5-FR6)', async () => {
