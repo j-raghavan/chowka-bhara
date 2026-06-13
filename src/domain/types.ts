@@ -123,6 +123,8 @@ export interface GameState {
   readonly winnerPlayerId: string | null;
 
   readonly history: readonly GameEvent[];
+  /** Bounded ring of recently applied commandIds for idempotency (I-CB16). */
+  readonly recentCommandIds: readonly string[];
   readonly createdAt: number;
   readonly updatedAt: number;
   readonly revision: number;

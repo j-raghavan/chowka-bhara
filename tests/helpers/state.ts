@@ -75,6 +75,7 @@ export function makePlayingState(opts: MakeStateOpts = {}): GameState {
     turnChainRollCount: 0,
     winnerPlayerId: null,
     history: [],
+    recentCommandIds: [],
     createdAt: 0,
     updatedAt: 0,
     revision: 0,
