@@ -11,5 +11,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Keep the (lazy) Supabase client in its own named chunk so it never
+        // lands in the entry bundle and the size budget measures initial load only.
+        manualChunks(id) {
+          if (id.includes('@supabase')) return 'supabase';
+          return undefined;
+        },
+      },
+    },
   },
 });

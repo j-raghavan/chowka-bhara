@@ -5,14 +5,22 @@ on:
     branches: [master, main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
       - name: Type-check
@@ -25,9 +33,33 @@ jobs:
         run: npm run coverage
       - name: Build
         run: npm run build
+      - name: Bundle size budget (initial JS < 300 kB gzip)
+        run: npm run size
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Assert no secrets in built bundle
         run: |
           if grep -rIEl "service_role|FIREBASE_PRIVATE_KEY|BEGIN [A-Z ]*PRIVATE KEY|admin[_-]?key" dist; then
             echo "::error::Potential secret found in dist/"; exit 1
           fi
           echo "No secret patterns found in dist/."
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
