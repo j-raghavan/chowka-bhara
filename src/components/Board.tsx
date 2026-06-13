@@ -56,75 +56,80 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
     }
   }
 
-  const cells: Coord[] = [];
-  for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) cells.push([r, c]);
+  const rows: Coord[][] = Array.from({ length: 7 }, (_unused, r) =>
+    Array.from({ length: 7 }, (_u, c) => [r, c] as Coord),
+  );
 
   return (
     <div className="board-frame">
       <div className="board-grid" role="grid" aria-label="Chowka Bhara board">
-        {cells.map((coord) => {
-          const key = coordKey(coord);
-          const role = houseRole(coord);
-          const occupant = occupants.get(key);
-          const legal = legalByCell.get(key);
-          const isSafeTile = role !== 'path';
-          const bg = isSafeTile ? SAFE_LIME : tileShade(coord);
-          const side = role === 'start' ? startSide(coord) : null;
+        {rows.map((row, r) => (
+          <div key={`row-${r}`} role="row" style={{ display: 'contents' }}>
+            {row.map((coord) => {
+              const key = coordKey(coord);
+              const role = houseRole(coord);
+              const occupant = occupants.get(key);
+              const legal = legalByCell.get(key);
+              const isSafeTile = role !== 'path';
+              const bg = isSafeTile ? SAFE_LIME : tileShade(coord);
+              const side = role === 'start' ? startSide(coord) : null;
 
-          const className =
-            'house' +
-            (legal ? ' legal' : '') +
-            (legal?.wouldHitPawnId ? ' hit' : '') +
-            (previewKeys.has(key) ? ' preview' : '');
+              const className =
+                'house' +
+                (legal ? ' legal' : '') +
+                (legal?.wouldHitPawnId ? ' hit' : '') +
+                (previewKeys.has(key) ? ' preview' : '');
 
-          const title = legal?.wouldHitPawnId
-            ? 'Hit — sends the opponent home'
-            : isSafeTile && occupant
-              ? 'Safe house — this pawn is protected; stacking is not allowed'
-              : undefined;
+              const title = legal?.wouldHitPawnId
+                ? 'Hit — sends the opponent home'
+                : isSafeTile && occupant
+                  ? 'Safe house — this pawn is protected; stacking is not allowed'
+                  : undefined;
 
-          const activate = legal && onSelectMove ? () => onSelectMove(legal.id) : undefined;
+              const activate = legal && onSelectMove ? () => onSelectMove(legal.id) : undefined;
 
-          return (
-            <div
-              key={key}
-              role="gridcell"
-              aria-label={`${role} house ${key}${occupant ? `, occupied by ${occupant.label}` : ''}${legal ? ', legal move' : ''}`}
-              className={className}
-              title={title}
-              style={{ background: bg, borderColor: isSafeTile ? SAFE_LIME_DEEP : undefined }}
-              tabIndex={legal ? 0 : -1}
-              onClick={activate}
-              onMouseEnter={legal ? () => setHovered(legal.id) : undefined}
-              onMouseLeave={legal ? () => setHovered(null) : undefined}
-              onFocus={legal ? () => setHovered(legal.id) : undefined}
-              onBlur={legal ? () => setHovered(null) : undefined}
-              onKeyDown={
-                activate
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        activate();
-                      }
-                    }
-                  : undefined
-              }
-            >
-              {role === 'center' && <CrownGlyph />}
-              {role === 'start' && side && <PawnGlyph color={SIDE_COLORS[side]} />}
-              {role === 'safe' && (
-                <span className="mark-x" aria-hidden="true">
-                  ×
-                </span>
-              )}
-              {occupant && (
-                <span className="pawn" style={{ background: occupant.color }}>
-                  {occupant.label}
-                </span>
-              )}
-            </div>
-          );
-        })}
+              return (
+                <div
+                  key={key}
+                  role="gridcell"
+                  aria-label={`${role} house ${key}${occupant ? `, occupied by ${occupant.label}` : ''}${legal ? ', legal move' : ''}`}
+                  className={className}
+                  title={title}
+                  style={{ background: bg, borderColor: isSafeTile ? SAFE_LIME_DEEP : undefined }}
+                  tabIndex={legal ? 0 : -1}
+                  onClick={activate}
+                  onMouseEnter={legal ? () => setHovered(legal.id) : undefined}
+                  onMouseLeave={legal ? () => setHovered(null) : undefined}
+                  onFocus={legal ? () => setHovered(legal.id) : undefined}
+                  onBlur={legal ? () => setHovered(null) : undefined}
+                  onKeyDown={
+                    activate
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            activate();
+                          }
+                        }
+                      : undefined
+                  }
+                >
+                  {role === 'center' && <CrownGlyph />}
+                  {role === 'start' && side && <PawnGlyph color={SIDE_COLORS[side]} />}
+                  {role === 'safe' && (
+                    <span className="mark-x" aria-hidden="true">
+                      ×
+                    </span>
+                  )}
+                  {occupant && (
+                    <span className="pawn" style={{ background: occupant.color }}>
+                      {occupant.label}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );
