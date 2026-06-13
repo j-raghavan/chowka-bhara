@@ -35,6 +35,9 @@ test('two tabs create, join, start, and play a turn online', async ({ context })
 
   // Host (South, first turn) rolls; a roll resolves and both tabs stay in sync.
   await host.getByRole('button', { name: /roll cowries/i }).click();
+  // The rolled value must be visible (regression: a no-move roll auto-skips and
+  // clears currentRoll, so the value is shown from history instead).
+  await expect(host.locator('.roll-value')).toContainText(/\d/);
   // The history log on the host records the roll...
   await expect(host.getByText(/rolled \d+/i).first()).toBeVisible();
   // ...and the guest tab receives the update too (its history shows the roll).

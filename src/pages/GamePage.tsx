@@ -25,12 +25,25 @@ export function GamePage({ room }: { room: RoomView }) {
     playing && isMyTurn && state.currentRoll === null && state.winnerPlayerId === null;
   const interactive = playing && isMyTurn;
 
+  // The roll value to display: the live roll, or the last roll from history so a
+  // value is always visible — even when a no-move roll auto-skipped (clearing currentRoll).
+  const lastRoll = [...state.history].reverse().find((e) => e.type === 'ROLL');
+  const shownValue =
+    state.currentRoll?.value ?? (lastRoll ? Number(lastRoll.data?.['value']) : null);
+  const rollIsLive = state.currentRoll !== null;
+
   // Surface the most recent skip for the local player (CB6-FR12).
   const lastSkip = [...state.history].reverse().find((e) => e.type === 'SKIP');
-  const mySkip =
+  const myPawnsAllHome =
+    me !== null &&
+    Object.values(state.pawns)
+      .filter((p) => p.playerId === me.playerId)
+      .every((p) => p.state === 'home');
+  let mySkip =
     lastSkip && lastSkip.playerId === me?.playerId && state.currentRoll === null
       ? SKIP_TEXT[String(lastSkip.data?.['reason'])]
       : undefined;
+  if (mySkip && myPawnsAllHome) mySkip = 'roll a 1 to bring a pawn onto the board';
 
   return (
     <div className="app-shell">
@@ -45,7 +58,7 @@ export function GamePage({ room }: { room: RoomView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="panel">
             <h2>{isMyTurn ? 'Your turn' : me?.spectator ? 'Spectating' : 'Waiting…'}</h2>
-            <CowrieRoll roll={state.currentRoll} canRoll={canRoll} onRoll={room.roll} />
+            <CowrieRoll value={shownValue} live={rollIsLive} canRoll={canRoll} onRoll={room.roll} />
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
               <button className="btn secondary" onClick={() => setShowRules((v) => !v)}>
                 {showRules ? 'Hide rules' : 'Rules'}
