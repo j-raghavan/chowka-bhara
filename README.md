@@ -32,6 +32,40 @@ npm run dev       # local dev server
 npm run build     # static build to dist/
 ```
 
+## Online play & transports
+
+The app is online-only and room-based. Create a room, then share its URL
+(`#/room/:gameId`) — friends open it to take a seat, or open it in a second
+browser tab to play yourself. Seat identity is per-tab (sessionStorage) and a
+reclaim token restores your seat after a refresh.
+
+The realtime backend is a swappable adapter behind one `GameTransport` port,
+selected at build time with `VITE_TRANSPORT`:
+
+| `VITE_TRANSPORT` | Backend | Scope |
+|---|---|---|
+| `broadcast` (default) | localStorage + BroadcastChannel | Same-browser, multiple tabs. Zero infra; rooms survive refresh. |
+| `memory` | in-memory | Single tab (tests/dev). |
+| `supabase` | Postgres + Realtime | Cross-device online. Requires a Supabase project. |
+
+### Supabase setup (cross-device play)
+
+1. Create a Supabase project and run the SQL in the header of
+   [`src/transport/supabase-transport.ts`](src/transport/supabase-transport.ts)
+   (the `rooms` and `reclaim_tokens` tables + RLS policies).
+2. Set build-time env (public anon key only — never the service-role key):
+   ```
+   VITE_TRANSPORT=supabase
+   VITE_SUPABASE_URL=https://<project>.supabase.co
+   VITE_SUPABASE_ANON_KEY=<anon-public-key>
+   ```
+3. Build and deploy. The Supabase client is loaded in a lazy chunk, so the
+   default (`broadcast`) build never ships it.
+
+Concurrency safety is identical across adapters: every command is applied through
+one shared compare-and-set transaction (`src/transport/cas.ts`) keyed on
+`expectedRevision`, so exactly one writer wins per revision (no lost updates).
+
 ## Rules
 
 Chowka Bhara Online uses a **7×7 board** and **6 cowries**. Default ruleset: `7x7-six-cowrie-v1`.
