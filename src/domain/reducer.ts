@@ -7,7 +7,7 @@ import { grantsBonus, rollCowries } from './cowries';
 import { assignSidesAndPawns, CANONICAL_ORDER, newSeat } from './game-setup';
 import { computeSkipReason, generateLegalMoves } from './legal-moves';
 import { appendEvents, makeEvent, rememberCommandId } from './history';
-import { assertInvariantsDev } from './invariants';
+import { assertInvariants } from './invariants';
 import type {
   ApplyResult,
   CommandRejectionCode,
@@ -43,7 +43,7 @@ export function applyCommand(state: GameState, command: GameCommand, env: Domain
     revision: state.revision + 1,
     updatedAt: env.clock.now(),
   };
-  assertInvariantsDev(next);
+  if (env.devMode) assertInvariants(next);
   return { state: next, accepted: true, events: step.events };
 }
 
@@ -254,7 +254,7 @@ export function resolveTurn(
   if (gameOver) {
     return { state: { ...state, turnChainRollCount: 0, currentRoll: null, legalMoves: [] }, events: [] };
   }
-  const bonus = (rollValue !== null && grantsBonus(rollValue as 1)) || didHit;
+  const bonus = (rollValue !== null && grantsBonus(rollValue)) || didHit;
   const capReached = state.turnChainRollCount >= state.config.maxTurnChain;
 
   if (bonus && !capReached) {
@@ -289,7 +289,7 @@ function nextPlayerId(state: GameState): string | null {
 
 function applyResign(state: GameState, playerId: string, env: DomainEnv): Step {
   const player = state.players[playerId];
-  if (player === undefined) return no('NOT_CURRENT_PLAYER');
+  if (player === undefined) return no('PLAYER_NOT_FOUND');
   const players: Record<string, Player> = {
     ...state.players,
     [playerId]: { ...player, status: 'resigned' },

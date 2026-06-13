@@ -148,6 +148,8 @@ export interface DomainEnv {
   readonly clock: Clock;
   readonly ids: IdSource;
   readonly random: CowrieRandomSource;
+  /** When true the reducer runs assertInvariants after each transition (set by the app, not the domain). */
+  readonly devMode?: boolean;
 }
 
 // --- Commands ---------------------------------------------------------------
@@ -211,7 +213,6 @@ export type CommandRejectionCode =
   | 'NOT_CURRENT_PLAYER'
   | 'WRONG_PHASE'
   | 'MOVE_NOT_LEGAL'
-  | 'CONFIG_LOCKED'
   | 'NOT_HOST'
   | 'ROOM_FULL'
   | 'BAD_PLAYER_COUNT'
@@ -219,6 +220,7 @@ export type CommandRejectionCode =
   | 'STALE_REVISION'
   | 'GAME_OVER'
   | 'NOT_IN_LOBBY'
+  | 'PLAYER_NOT_FOUND'
   | 'UNKNOWN_COMMAND';
 
 export interface ApplyResult {

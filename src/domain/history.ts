@@ -23,7 +23,14 @@ export function appendEvents(
   return [...history, ...events].slice(-max);
 }
 
-/** Track a commandId in the bounded idempotency ring. */
+/**
+ * Track a commandId in the bounded idempotency ring (I-CB16).
+ * The ring is a secondary guard: the primary defence against re-applying a
+ * command is the CAS `expectedRevision` check (a replay of an old command
+ * already fails STALE_REVISION). The ring catches a same-revision duplicate;
+ * `MAX_RECENT_COMMAND_IDS` (100) is far larger than any realistic in-flight
+ * window for turn-based play.
+ */
 export function rememberCommandId(
   ids: readonly string[],
   commandId: string,

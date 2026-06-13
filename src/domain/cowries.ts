@@ -26,7 +26,7 @@ export function scoreCowries(faces: readonly CowrieFace[]): RollValue {
 }
 
 /** Roll values 6 (Chowka) and 12 (Bhara) grant a bonus turn (I-CB9). */
-export function grantsBonus(value: RollValue): boolean {
+export function grantsBonus(value: number): boolean {
   return value === 6 || value === 12;
 }
 

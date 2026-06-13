@@ -50,6 +50,13 @@ export interface GameTransport {
    *   - duplicate commandId -> accepted idempotently, no mutation (I-CB16)
    *   - state.revision !== command.expectedRevision -> STALE_REVISION, no mutation (I-CB17)
    *   - else applyCommand inside the transaction; on accept persist (revision+1) and broadcast
+   *
+   * ATOMICITY MANDATE (adapters): the read -> revision-check -> applyCommand ->
+   * persist sequence MUST run inside the backend's native transaction keyed on
+   * `expectedRevision` (Firestore `runTransaction`, or Postgres
+   * `UPDATE ... WHERE revision = expected`). A plain read-then-write outside a
+   * transaction is last-write-wins and violates this contract. FakeTransport is
+   * safe only because JS is single-threaded and its body is synchronous.
    */
   transactCommand(command: GameCommand): Promise<CommandResult>;
   updatePresence(gameId: string, playerId: string, status: PlayerStatus): Promise<void>;

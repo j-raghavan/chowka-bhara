@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { assignSidesAndPawns } from '../../src/domain/game-setup';
-import { assertInvariants, assertInvariantsDev } from '../../src/domain/invariants';
+import { assertInvariants } from '../../src/domain/invariants';
 import { computeSkipReason } from '../../src/domain/legal-moves';
 import { buildOccupancy } from '../../src/domain/occupancy';
 import { validatePaths, PATHS, SOUTH_PATH } from '../../src/domain/paths';
@@ -41,16 +41,6 @@ describe('invariants extra branches', () => {
     expect(() => assertInvariants(broken)).toThrow(/I-CB8/);
   });
 
-  const original = process.env.NODE_ENV;
-  afterEach(() => {
-    process.env.NODE_ENV = original;
-  });
-
-  it('assertInvariantsDev is a no-op in production', () => {
-    process.env.NODE_ENV = 'production';
-    const bad = withPawnAt(makePlayingState(), 'south-p0', 50);
-    expect(() => assertInvariantsDev(bad)).not.toThrow();
-  });
 });
 
 describe('computeSkipReason extra branches', () => {

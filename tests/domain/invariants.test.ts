@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assertInvariants, assertInvariantsDev, InvariantError } from '../../src/domain/invariants';
+import { assertInvariants, InvariantError } from '../../src/domain/invariants';
 import { appendEvents, makeEvent, rememberCommandId, MAX_HISTORY } from '../../src/domain/history';
 import { makePlayingState, withPawnAt } from '../helpers/state';
 import { makeEnv } from '../helpers/env';
@@ -8,7 +8,6 @@ describe('assertInvariants (L-CB5)', () => {
   it('passes for a well-formed state', () => {
     const s = withPawnAt(makePlayingState(), 'south-p0', 5);
     expect(() => assertInvariants(s)).not.toThrow();
-    expect(() => assertInvariantsDev(s)).not.toThrow();
   });
 
   it('throws when two active pawns share a coordinate (I-CB4)', () => {

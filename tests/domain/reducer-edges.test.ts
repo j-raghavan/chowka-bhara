@@ -80,7 +80,7 @@ describe('in-play edges', () => {
 
   it('rejects a resign from an unknown player', () => {
     const s = makePlayingState({ sides: ['south', 'north'] });
-    expect(applyCommand(s, cmd({ type: 'RESIGN', playerId: 'ghost' }), makeEnv()).rejection).toBe('NOT_CURRENT_PLAYER');
+    expect(applyCommand(s, cmd({ type: 'RESIGN', playerId: 'ghost' }), makeEnv()).rejection).toBe('PLAYER_NOT_FOUND');
   });
 
   it('keeps a non-current resign from advancing the turn (4 players)', () => {
@@ -88,6 +88,13 @@ describe('in-play edges', () => {
     const res = applyCommand(s, cmd({ type: 'RESIGN', playerId: 'north' }), makeEnv());
     expect(res.state.currentPlayerId).toBe('south');
     expect(res.state.status).toBe('playing');
+  });
+
+  it('applies a command without running invariants when devMode is off', () => {
+    const s = makePlayingState({ sides: ['south', 'north'] });
+    const env = { ...envForRolls([3]), devMode: false };
+    const res = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
+    expect(res.accepted).toBe(true);
   });
 
   it('resigns a player in the lobby without ending a game', () => {

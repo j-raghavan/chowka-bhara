@@ -27,6 +27,15 @@ describe('App (smoke)', () => {
     });
   });
 
+  it('returns to the home screen on New game (reset)', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /play 2 players/i }));
+    await screen.findByRole('button', { name: /roll cowries/i });
+    await user.click(screen.getByRole('button', { name: /new game/i }));
+    expect(await screen.findByRole('button', { name: /play 2 players/i })).toBeInTheDocument();
+  });
+
   it('toggles the in-game rules panel', async () => {
     const user = userEvent.setup();
     render(<App />);

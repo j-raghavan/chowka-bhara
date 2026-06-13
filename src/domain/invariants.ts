@@ -57,8 +57,3 @@ export function assertInvariants(state: GameState): void {
     throw new InvariantError('I-CB15', 'winner set but status is not finished');
   }
 }
-
-/** Dev/test-only guard; a no-op in production builds. */
-export function assertInvariantsDev(state: GameState): void {
-  if (process.env.NODE_ENV !== 'production') assertInvariants(state);
-}

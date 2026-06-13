@@ -3,7 +3,7 @@
  * them through the transport. The UI calls these; it never builds commands or
  * touches the reducer directly.
  */
-import type { DomainEnv, GameState, PlayerStatus } from '../../domain/types';
+import type { CommandType, DomainEnv, GameState, PlayerStatus } from '../../domain/types';
 import type {
   CommandResult,
   CreateRoomResult,
@@ -11,6 +11,12 @@ import type {
   JoinRoomResult,
   Unsubscribe,
 } from '../../transport/game-transport';
+
+/** The revision-bearing portion a command builder produces; the service fills in the rest. */
+type PartialCommand = { readonly expectedRevision: number } & (
+  | { readonly type: Exclude<CommandType, 'SELECT_MOVE' | 'CREATE_ROOM' | 'JOIN_ROOM' | 'LEAVE_ROOM'> }
+  | { readonly type: 'SELECT_MOVE'; readonly moveId: string }
+);
 
 export class GameService {
   constructor(
@@ -57,7 +63,7 @@ export class GameService {
   private submit(
     gameId: string,
     playerId: string,
-    build: (revision: number) => { type: string; expectedRevision: number; moveId?: string },
+    build: (revision: number) => PartialCommand,
   ): Promise<CommandResult> {
     const state = this.transport.getState(gameId);
     if (state === undefined) {

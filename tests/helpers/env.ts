@@ -31,6 +31,7 @@ export function makeEnv(
     clock: fixedClock(),
     ids: seqIdSource(),
     random: seededRandomSource(faces ?? 1),
+    devMode: true, // run assertInvariants after every transition in tests
   };
 }
 

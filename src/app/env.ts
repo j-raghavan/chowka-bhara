@@ -20,5 +20,11 @@ export const cryptoRandomSource: CowrieRandomSource = {
 };
 
 export function makeProductionEnv(): DomainEnv {
-  return { clock: systemClock, ids: uuidIdSource, random: cryptoRandomSource };
+  // devMode (invariant checks) on in dev builds, off in production (perf).
+  return {
+    clock: systemClock,
+    ids: uuidIdSource,
+    random: cryptoRandomSource,
+    devMode: import.meta.env.DEV,
+  };
 }
