@@ -23,6 +23,9 @@ coverage/
 .env.*
 !.env.example
 
+# Working spec folder (local drafts, notes, credentials) — not part of the repo
+spec/
+
 # Claude / tooling (kept local, not part of the shipped app)
 .claude/
 .claude-flow/
