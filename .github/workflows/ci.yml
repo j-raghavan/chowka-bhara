@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Test with coverage (domain/app/transport >= 97%)
+        run: npm run coverage
+      - name: Build
+        run: npm run build
+      - name: Assert no secrets in built bundle
+        run: |
+          if grep -rIEl "service_role|FIREBASE_PRIVATE_KEY|BEGIN [A-Z ]*PRIVATE KEY|admin[_-]?key" dist; then
+            echo "::error::Potential secret found in dist/"; exit 1
+          fi
+          echo "No secret patterns found in dist/."
