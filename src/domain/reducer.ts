@@ -175,7 +175,11 @@ function applyRoll(state: GameState, playerId: string, env: DomainEnv): Step {
   const legalMoves = generateLegalMoves(s);
   s = { ...s, legalMoves };
   const events: GameEvent[] = [
-    makeEvent('ROLL', env, playerId, { value: roll.value, openCount: roll.openCount }),
+    makeEvent('ROLL', env, playerId, {
+      value: roll.value,
+      openCount: roll.openCount,
+      faces: roll.faces,
+    }),
   ];
 
   if (legalMoves.length === 0) {

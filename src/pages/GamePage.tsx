@@ -6,6 +6,7 @@ import { GameHistory } from '../components/GameHistory';
 import { RulesPanel } from '../components/RulesPanel';
 import { TurnBanner } from '../components/TurnBanner';
 import type { RoomView } from '../app/useRoom';
+import type { CowrieFace } from '../domain/types';
 
 const SKIP_TEXT: Record<string, string> = {
   'start-blocked': 'your start house was blocked',
@@ -25,11 +26,11 @@ export function GamePage({ room }: { room: RoomView }) {
     playing && isMyTurn && state.currentRoll === null && state.winnerPlayerId === null;
   const interactive = playing && isMyTurn;
 
-  // The roll value to display: the live roll, or the last roll from history so a
-  // value is always visible — even when a no-move roll auto-skipped (clearing currentRoll).
+  // The faces to display: the live roll, or the last roll from history so the throw
+  // is always visible — even when a no-move roll auto-skipped (clearing currentRoll).
   const lastRoll = [...state.history].reverse().find((e) => e.type === 'ROLL');
-  const shownValue =
-    state.currentRoll?.value ?? (lastRoll ? Number(lastRoll.data?.['value']) : null);
+  const shownFaces =
+    state.currentRoll?.faces ?? (lastRoll?.data?.['faces'] as CowrieFace[] | undefined) ?? null;
   const rollIsLive = state.currentRoll !== null;
 
   // Surface the most recent skip for the local player (CB6-FR12).
@@ -58,7 +59,7 @@ export function GamePage({ room }: { room: RoomView }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="panel">
             <h2>{isMyTurn ? 'Your turn' : me?.spectator ? 'Spectating' : 'Waiting…'}</h2>
-            <CowrieRoll value={shownValue} live={rollIsLive} canRoll={canRoll} onRoll={room.roll} />
+            <CowrieRoll faces={shownFaces} live={rollIsLive} canRoll={canRoll} onRoll={room.roll} />
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
               <button className="btn secondary" onClick={() => setShowRules((v) => !v)}>
                 {showRules ? 'Hide rules' : 'Rules'}

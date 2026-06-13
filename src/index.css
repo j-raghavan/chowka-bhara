@@ -230,16 +230,29 @@ button {
   margin: 0.4rem 0;
 }
 .cowrie {
+  position: relative;
   width: 26px;
-  height: 34px;
-  border-radius: 50% 50% 45% 45%;
-  border: 2px solid #b9a06a;
+  height: 32px;
+  border: 2px solid #9c7d4e;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.2);
 }
+/* Open = mouth up (counts toward the score): pale, ridged opening */
 .cowrie.open {
   background: #f3e7c4;
+  border-radius: 50% 50% 48% 48%;
 }
+.cowrie.open::after {
+  content: '';
+  position: absolute;
+  inset: 32% 30% 14%;
+  border-radius: 0 0 40% 40%;
+  background: #cdb487;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+/* Closed = shell down (rounded brown back, does not count) */
 .cowrie.closed {
-  background: #7a5b34;
+  background: radial-gradient(circle at 50% 35%, #9a734a, #6f4f2e);
+  border-radius: 48% 48% 50% 50%;
 }
 .roll-value {
   text-align: center;
