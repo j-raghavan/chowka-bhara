@@ -5,12 +5,98 @@ import type { GameState } from '../../src/domain/types';
 import { envForRolls, makeEnv } from '../helpers/env';
 import { commandFactory } from '../helpers/commands';
 import { makePlayingState } from '../helpers/state';
+import { PAWN_PALETTE } from '../../src/domain/config';
 
 const cmd = commandFactory();
 
 function lobby(): GameState {
   return createInitialState({ gameId: 'g', hostId: 'host', hostName: 'Host' }, makeEnv());
 }
+
+describe('SET_COLOR (pawn color choice)', () => {
+  it('sets a player color from the palette in the lobby', () => {
+    const color = PAWN_PALETTE[4]!;
+    const res = applyCommand(
+      lobby(),
+      cmd({ type: 'SET_COLOR', playerId: 'host', color }),
+      makeEnv(),
+    );
+    expect(res.accepted).toBe(true);
+    expect(res.state.players['host']!.color).toBe(color);
+  });
+
+  it('rejects a color outside the palette', () => {
+    const res = applyCommand(
+      lobby(),
+      cmd({ type: 'SET_COLOR', playerId: 'host', color: '#123456' }),
+      makeEnv(),
+    );
+    expect(res.rejection).toBe('INVALID_COLOR');
+  });
+
+  it('rejects a color already taken by another player', () => {
+    let s = lobby();
+    s = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'B' }),
+      makeEnv(),
+    ).state;
+    const otherColor = s.players['b']!.color;
+    const res = applyCommand(
+      s,
+      cmd({ type: 'SET_COLOR', playerId: 'host', color: otherColor }),
+      makeEnv(),
+    );
+    expect(res.rejection).toBe('COLOR_TAKEN');
+  });
+
+  it('is idempotent when re-choosing the same color', () => {
+    const current = lobby().players['host']!.color;
+    const res = applyCommand(
+      lobby(),
+      cmd({ type: 'SET_COLOR', playerId: 'host', color: current }),
+      makeEnv(),
+    );
+    expect(res.accepted).toBe(true);
+    expect(res.state.players['host']!.color).toBe(current);
+  });
+
+  it('rejects an unknown player and color changes outside the lobby', () => {
+    expect(
+      applyCommand(
+        lobby(),
+        cmd({ type: 'SET_COLOR', playerId: 'ghost', color: PAWN_PALETTE[5]! }),
+        makeEnv(),
+      ).rejection,
+    ).toBe('PLAYER_NOT_FOUND');
+    const playing = makePlayingState({ sides: ['south', 'north'] });
+    expect(
+      applyCommand(
+        playing,
+        cmd({ type: 'SET_COLOR', playerId: 'south', color: PAWN_PALETTE[5]! }),
+        makeEnv(),
+      ).rejection,
+    ).toBe('NOT_IN_LOBBY');
+  });
+
+  it('preserves a chosen color through START_GAME', () => {
+    let s = lobby();
+    s = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'B' }),
+      makeEnv(),
+    ).state;
+    const chosen = PAWN_PALETTE[6]!;
+    s = applyCommand(
+      s,
+      cmd({ type: 'SET_COLOR', playerId: 'host', color: chosen }),
+      makeEnv(),
+    ).state;
+    s = applyCommand(s, cmd({ type: 'START_GAME', playerId: 'host' }), makeEnv()).state;
+    expect(s.status).toBe('playing');
+    expect(s.players['host']!.color).toBe(chosen);
+  });
+});
 
 describe('lobby transitions', () => {
   it('seats joining players and rejects a full room', () => {

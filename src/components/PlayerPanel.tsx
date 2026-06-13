@@ -1,4 +1,4 @@
-import { SIDE_COLORS, SIDE_LABEL } from '../ui/board-theme';
+import { SIDE_LABEL } from '../ui/board-theme';
 import type { GameState, Pawn } from '../domain/types';
 
 const STATE_TITLE: Record<Pawn['state'], string> = {
@@ -21,7 +21,7 @@ export function PlayerPanel({ state }: { state: GameState }) {
         const finished = pawns.filter((p) => p.state === 'finished').length;
         return (
           <div key={id} className={'player-row' + (isCurrent ? ' current' : '')}>
-            <span className="dot" style={{ background: SIDE_COLORS[player.side] }} />
+            <span className="dot" style={{ background: player.color }} />
             <span className="player-info">
               <strong>{player.displayName}</strong>
               <small>
@@ -36,7 +36,7 @@ export function PlayerPanel({ state }: { state: GameState }) {
                 <span
                   key={p.id}
                   className={`tray-pawn ${p.state}`}
-                  style={{ background: SIDE_COLORS[player.side] }}
+                  style={{ background: player.color }}
                   title={STATE_TITLE[p.state]}
                 />
               ))}

@@ -7,6 +7,26 @@ import type { GameConfig } from './types';
 
 export const RULESET_ID = '7x7-six-cowrie-v1' as const;
 
+/**
+ * Selectable pawn colors (single source of truth). The first four are the
+ * default seat colors (South, East, North, West); the rest are extra choices.
+ * Players may pick any palette color not already taken (CB-color choice).
+ */
+export const PAWN_PALETTE: readonly string[] = [
+  '#3f51b5', // indigo (South default)
+  '#f9a825', // marigold (East default)
+  '#bf360c', // terracotta (North default)
+  '#2e7d32', // forest (West default)
+  '#7b1fa2', // purple
+  '#0097a7', // teal
+  '#c2185b', // magenta
+  '#455a64', // slate
+];
+
+export function isPaletteColor(color: string): boolean {
+  return PAWN_PALETTE.includes(color);
+}
+
 export const DEFAULT_7X7_CONFIG: GameConfig = {
   ruleset: RULESET_ID,
   boardSize: 7,

@@ -99,7 +99,8 @@ export function assignSidesAndPawns(
     const existing = players[playerId];
     const side = sides[i]!;
     if (existing === undefined) return;
-    nextPlayers[playerId] = { ...existing, side, color: SIDE_COLORS[side] };
+    // Keep the player's chosen color (set at join / via SET_COLOR); only fix the side.
+    nextPlayers[playerId] = { ...existing, side };
     for (const pawn of makePawns(playerId, pawnsPerPlayer)) pawns[pawn.id] = pawn;
   });
   return { players: nextPlayers, pawns, playerOrder: [...joinOrder] };

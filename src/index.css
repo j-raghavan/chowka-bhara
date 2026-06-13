@@ -52,6 +52,32 @@ button {
   margin: 0 auto 1.6rem;
   width: min(92vw, 460px);
 }
+.lobby-panel {
+  max-width: 420px;
+  margin: 0 auto 1rem;
+  text-align: left;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 3px var(--shadow);
+  padding: 0;
+}
+.swatch.selected {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.swatch:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 .home-actions {
   display: flex;
   flex-wrap: wrap;
