@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+.vitest/
+playwright-report/
+test-results/
+/blob-report/
+.playwright/
+
+# Editor / OS
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local env / secrets (never commit transport secrets)
+.env
+.env.*
+!.env.example
+
+# Working spec folder (local drafts, notes, credentials) — not part of the repo
+spec/
+
+# Claude / tooling (kept local, not part of the shipped app)
+.claude/
+.claude-flow/
+.mcp*
+CLAUDE.md
