@@ -25,12 +25,18 @@ const ROOM_PREFIX = 'cb:room:';
 const TOKEN_PREFIX = 'cb:token:';
 
 export class BrowserTransport extends StoreTransport {
+  private readonly subscribers = new Map<string, Set<(state: GameState) => void>>();
+
   constructor(
     env: DomainEnv,
     private readonly store: KeyValueStore,
     private readonly notifier: RoomNotifier,
   ) {
     super(env);
+    // Another tab wrote: re-read from the shared store and notify our subscribers.
+    // (BroadcastChannel does not deliver a tab's own posts, so local writes are
+    // dispatched directly in putState — see below.)
+    this.notifier.subscribe((gameId) => this.dispatch(gameId));
   }
 
   /** Wire to the real browser localStorage + BroadcastChannel. */
@@ -45,6 +51,9 @@ export class BrowserTransport extends StoreTransport {
 
   protected putState(state: GameState): void {
     this.store.setItem(ROOM_PREFIX + state.gameId, JSON.stringify(state));
+    // Notify THIS tab's subscribers directly (the channel won't echo to us)...
+    this.notify(state.gameId, state);
+    // ...and tell other tabs to re-read.
     this.notifier.post(state.gameId);
   }
 
@@ -58,13 +67,21 @@ export class BrowserTransport extends StoreTransport {
   }
 
   subscribeRoom(gameId: string, onState: (state: GameState) => void): Unsubscribe {
-    const unsub = this.notifier.subscribe((changed) => {
-      if (changed !== gameId) return;
-      const state = this.getState(gameId);
-      if (state !== undefined) onState(state);
-    });
+    const set = this.subscribers.get(gameId) ?? new Set();
+    set.add(onState);
+    this.subscribers.set(gameId, set);
     const current = this.getState(gameId);
     if (current !== undefined) onState(current);
-    return unsub;
+    return () => set.delete(onState);
+  }
+
+  private dispatch(gameId: string): void {
+    const state = this.getState(gameId);
+    if (state !== undefined) this.notify(gameId, state);
+  }
+
+  private notify(gameId: string, state: GameState): void {
+    const set = this.subscribers.get(gameId);
+    if (set !== undefined) for (const cb of set) cb(state);
   }
 }
