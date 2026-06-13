@@ -1,47 +1,40 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../../src/App';
 
-describe('App (smoke)', () => {
-  it('renders the home screen with the board replica', () => {
+describe('App online flow (smoke)', () => {
+  beforeEach(() => {
+    window.location.hash = '';
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+  afterEach(() => {
+    window.location.hash = '';
+  });
+
+  it('renders the home screen with the board replica and a create-room form', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: /chowka bhara/i })).toBeInTheDocument();
     expect(screen.getByRole('grid', { name: /chowka bhara board/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create a room/i })).toBeInTheDocument();
   });
 
-  it('starts a local 2-player game and lets the current player roll', async () => {
+  it('creates a room and lands in the lobby as host', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: /play 2 players/i }));
 
-    // Game page appears with a roll control and a turn banner.
-    const rollButton = await screen.findByRole('button', { name: /roll cowries/i });
-    expect(rollButton).toBeInTheDocument();
-    expect(screen.getByText(/roll the cowries|choose a highlighted move/i)).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: /your name/i }), 'Alice');
+    await user.click(screen.getByRole('button', { name: /create a room/i }));
 
-    await user.click(rollButton);
-    // After rolling, a roll value is shown (any of 1..6 or 12) or the turn resolved.
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /new game/i })).toBeInTheDocument();
-    });
-  });
+    // Navigated to a room URL.
+    await waitFor(() => expect(window.location.hash).toMatch(/#\/room\//));
+    // jsdom doesn't always emit hashchange on programmatic assignment; nudge it.
+    window.dispatchEvent(new Event('hashchange'));
 
-  it('returns to the home screen on New game (reset)', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: /play 2 players/i }));
-    await screen.findByRole('button', { name: /roll cowries/i });
-    await user.click(screen.getByRole('button', { name: /new game/i }));
-    expect(await screen.findByRole('button', { name: /play 2 players/i })).toBeInTheDocument();
-  });
-
-  it('toggles the in-game rules panel', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: /play 2 players/i }));
-    await screen.findByRole('button', { name: /roll cowries/i });
-    await user.click(screen.getByRole('button', { name: /^rules$/i }));
-    expect(await screen.findByText(/six cowries/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /game lobby/i })).toBeInTheDocument();
+    expect(screen.getByText(/alice/i)).toBeInTheDocument();
+    // Host sees a start control (disabled until 2+ players).
+    expect(screen.getByRole('button', { name: /need 2\+ players|start game/i })).toBeInTheDocument();
   });
 });

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { coordAt } from '../domain/paths';
 import { coordKey } from '../domain/board';
+import { pathTrail } from '../domain/selectors';
 import {
   houseRole,
   SAFE_LIME,
@@ -14,7 +16,6 @@ import type { Coord, GameState, LegalMove } from '../domain/types';
 interface Occupant {
   readonly color: string;
   readonly label: string;
-  readonly finished: boolean;
 }
 
 function buildOccupants(state: GameState): Map<string, Occupant> {
@@ -23,11 +24,9 @@ function buildOccupants(state: GameState): Map<string, Occupant> {
     if (pawn.state !== 'active' || pawn.pathIndex === null) continue;
     const player = state.players[pawn.playerId];
     if (player === undefined) continue;
-    const coord = coordAt(player.side, pawn.pathIndex);
-    map.set(coordKey(coord), {
+    map.set(coordKey(coordAt(player.side, pawn.pathIndex)), {
       color: SIDE_COLORS[player.side],
       label: player.side[0]!.toUpperCase(),
-      finished: false,
     });
   }
   return map;
@@ -40,10 +39,20 @@ export interface BoardProps {
 }
 
 export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
+  const [hovered, setHovered] = useState<string | null>(null);
   const occupants = buildOccupants(state);
   const legalByCell = new Map<string, LegalMove>();
-  if (interactive) {
-    for (const move of state.legalMoves) legalByCell.set(coordKey(move.to), move);
+  if (interactive) for (const move of state.legalMoves) legalByCell.set(coordKey(move.to), move);
+
+  // Preview trail for the hovered/focused legal move (CB6-FR6).
+  const previewKeys = new Set<string>();
+  const hoveredMove = state.legalMoves.find((m) => m.id === hovered);
+  if (interactive && hoveredMove) {
+    const side = state.players[hoveredMove.playerId]?.side;
+    if (side) {
+      const from = hoveredMove.fromIndex ?? 0;
+      for (const coord of pathTrail(side, from, hoveredMove.toIndex)) previewKeys.add(coordKey(coord));
+    }
   }
 
   const cells: Coord[] = [];
@@ -64,25 +73,37 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
           const className =
             'house' +
             (legal ? ' legal' : '') +
-            (legal?.wouldHitPawnId ? ' hit' : '');
+            (legal?.wouldHitPawnId ? ' hit' : '') +
+            (previewKeys.has(key) ? ' preview' : '');
 
-          const label = `${role} house ${key}` + (occupant ? `, occupied by ${occupant.label}` : '');
+          const title = legal?.wouldHitPawnId
+            ? 'Hit — sends the opponent home'
+            : isSafeTile && occupant
+              ? 'Safe house — this pawn is protected; stacking is not allowed'
+              : undefined;
+
+          const activate = legal && onSelectMove ? () => onSelectMove(legal.id) : undefined;
 
           return (
             <div
               key={key}
               role="gridcell"
-              aria-label={label}
+              aria-label={`${role} house ${key}${occupant ? `, occupied by ${occupant.label}` : ''}${legal ? ', legal move' : ''}`}
               className={className}
+              title={title}
               style={{ background: bg, borderColor: isSafeTile ? SAFE_LIME_DEEP : undefined }}
               tabIndex={legal ? 0 : -1}
-              onClick={legal && onSelectMove ? () => onSelectMove(legal.id) : undefined}
+              onClick={activate}
+              onMouseEnter={legal ? () => setHovered(legal.id) : undefined}
+              onMouseLeave={legal ? () => setHovered(null) : undefined}
+              onFocus={legal ? () => setHovered(legal.id) : undefined}
+              onBlur={legal ? () => setHovered(null) : undefined}
               onKeyDown={
-                legal && onSelectMove
+                activate
                   ? (e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        onSelectMove(legal.id);
+                        activate();
                       }
                     }
                   : undefined
@@ -92,10 +113,7 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
               {role === 'start' && side && <PawnGlyph color={SIDE_COLORS[side]} />}
               {role === 'safe' && <span className="mark-x" aria-hidden="true">×</span>}
               {occupant && (
-                <span
-                  className={'pawn' + (occupant.finished ? ' finished' : '')}
-                  style={{ background: occupant.color }}
-                >
+                <span className="pawn" style={{ background: occupant.color }}>
                   {occupant.label}
                 </span>
               )}

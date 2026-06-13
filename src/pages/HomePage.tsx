@@ -5,10 +5,10 @@ import { makeProductionEnv } from '../app/env';
 import type { GameState } from '../domain/types';
 
 export interface HomePageProps {
-  readonly onStart: (playerCount: number, hostName: string) => void;
+  readonly onCreate: (name: string) => void;
 }
 
-export function HomePage({ onStart }: HomePageProps) {
+export function HomePage({ onCreate }: HomePageProps) {
   const [name, setName] = useState('');
   const demo: GameState = useMemo(
     () => createInitialState({ gameId: 'demo', hostId: 'demo', hostName: 'demo' }, makeProductionEnv()),
@@ -18,7 +18,7 @@ export function HomePage({ onStart }: HomePageProps) {
   return (
     <div className="home">
       <h1>Chowka Bhara</h1>
-      <p className="tagline">The traditional 7×7 board game — for 2 to 4 players, in your browser.</p>
+      <p className="tagline">The traditional 7×7 board game — online, for 2 to 4 players.</p>
 
       <div className="home-board">
         <Board state={demo} interactive={false} />
@@ -27,15 +27,22 @@ export function HomePage({ onStart }: HomePageProps) {
           alt="Handmade Chowka Bhara board"
           style={{ display: 'none' }}
           onLoad={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = 'block';
-            (e.currentTarget as HTMLImageElement).style.width = '100%';
-            (e.currentTarget as HTMLImageElement).style.borderRadius = '12px';
-            (e.currentTarget as HTMLImageElement).style.marginTop = '1rem';
+            const img = e.currentTarget;
+            img.style.display = 'block';
+            img.style.width = '100%';
+            img.style.borderRadius = '12px';
+            img.style.marginTop = '1rem';
           }}
         />
       </div>
 
-      <div className="home-actions">
+      <form
+        className="home-actions"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onCreate(name);
+        }}
+      >
         <input
           aria-label="Your name"
           placeholder="Your name"
@@ -43,16 +50,14 @@ export function HomePage({ onStart }: HomePageProps) {
           maxLength={20}
           onChange={(e) => setName(e.target.value)}
         />
-        <button className="btn" onClick={() => onStart(2, name)}>
-          Play 2 players
+        <button className="btn" type="submit">
+          Create a room
         </button>
-        <button className="btn secondary" onClick={() => onStart(3, name)}>
-          3 players
-        </button>
-        <button className="btn secondary" onClick={() => onStart(4, name)}>
-          4 players
-        </button>
-      </div>
+      </form>
+      <p className="tagline" style={{ marginTop: '0.8rem' }}>
+        Create a room, then share its link. Friends open it to take a seat — or open it in a second
+        browser tab to play yourself.
+      </p>
     </div>
   );
 }

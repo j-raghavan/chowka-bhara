@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // UI tests use the in-memory transport (no real BroadcastChannel under jsdom).
+  define: { 'import.meta.env.VITE_TRANSPORT': '"memory"' },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -11,7 +13,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['src/domain/**', 'src/app/**', 'src/transport/**'],
+      // Gate the pure LOGIC: domain rules, application services, transports.
+      // React hooks/components/pages are UI — measured separately, not 97%-gated
+      // (ADR test policy). Pure app helpers (env, identity, hash-route) are still
+      // tested for confidence, just not part of this gate.
+      include: ['src/domain/**', 'src/app/services/**', 'src/transport/**'],
       exclude: [
         'src/**/index.ts',
         '**/*.d.ts',
