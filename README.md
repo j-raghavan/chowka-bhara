@@ -34,8 +34,32 @@ npm run build     # static build to dist/
 
 ## Rules
 
-See [Appendix A of the spec](spec/SPEC-CHOWKA-BHARA-ONLINE.md) — full rules are documented
-there and surfaced in-app via the Rules panel (feature CB8).
+Chowka Bhara Online uses a **7×7 board** and **6 cowries**. Default ruleset: `7x7-six-cowrie-v1`.
+The same rules are surfaced in-app via the Rules panel.
+
+| Open cowries | Move value |
+|---:|:---|
+| 0 | 12 — *Bhara / Bara* |
+| 1 | 1 |
+| 2 | 2 |
+| 3 | 3 |
+| 4 | 4 |
+| 5 | 5 |
+| 6 | 6 — *Chowka* |
+
+- A pawn enters the board **only on a roll of 1**.
+- Rolling **6 or 12**, or **hitting an opponent**, grants an extra turn.
+- **Only one pawn per house** — no stacking, no Gatti, no doubles, no paired movement.
+- Landing on an opponent on a **non-safe** house sends it home and you take the house.
+- A pawn on a **safe house** (the four start houses and the center) cannot be hit; because
+  stacking is forbidden, an occupied safe house **blocks** landing.
+- You must **hit at least one opponent** before entering the inner rings (path index ≥ 24).
+- A pawn must land **exactly** on the center to finish. First to bring all pawns home **wins**.
+
+The ruleset id is stored with every game, so an in-progress game keeps its rules even if a
+future variant becomes the default (CB8-FR4/FR6). See the
+[spec](spec/SPEC-CHOWKA-BHARA-ONLINE.md) for the full, authoritative definition and the
+project-specific deviations from regional variants.
 
 ## License
 
