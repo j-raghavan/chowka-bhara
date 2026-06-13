@@ -24,6 +24,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Configure Pages (enable + set source to GitHub Actions if needed)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Build (with GitHub Pages base path)
         # Serves from https://<user>.github.io/<repo>/
         env:
