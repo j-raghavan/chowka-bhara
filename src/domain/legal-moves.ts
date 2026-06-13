@@ -117,6 +117,13 @@ export function destinationRule(c: MoveCandidate, ctx: MoveContext): GateResult 
   return pass(c, occupant.pawnId);
 }
 
+const REASON_TO_SKIP: Readonly<Record<GateReason, SkipReason>> = {
+  OVERSHOOT: 'would-overshoot',
+  INNER_PATH_NO_HIT: 'inner-path-locked',
+  OWN_PAWN: 'all-targets-blocked',
+  OPP_SAFE_BLOCKED: 'all-targets-blocked',
+};
+
 const GATES: ReadonlyArray<(c: MoveCandidate, ctx: MoveContext) => GateResult> = [
   withinBounds,
   innerPathGate,
@@ -159,6 +166,7 @@ export function generateLegalMoves(state: GameState): readonly LegalMove[] {
   const { currentPlayerId, currentRoll } = state;
   if (currentPlayerId === null || currentRoll === null) return [];
   const player = state.players[currentPlayerId];
+  /* v8 ignore next -- defensive: the current player always has a record */
   if (player === undefined) return [];
 
   const ctx: MoveContext = { state, occ: buildOccupancy(state), player, roll: currentRoll };
@@ -176,8 +184,10 @@ export function generateLegalMoves(state: GameState): readonly LegalMove[] {
  */
 export function computeSkipReason(state: GameState): SkipReason {
   const { currentPlayerId, currentRoll } = state;
+  /* v8 ignore next -- defensive: only invoked mid-turn with a current roll */
   if (currentPlayerId === null || currentRoll === null) return 'all-targets-blocked';
   const player = state.players[currentPlayerId];
+  /* v8 ignore next -- defensive: current player always has a record */
   if (player === undefined) return 'all-targets-blocked';
 
   const ctx: MoveContext = { state, occ: buildOccupancy(state), player, roll: currentRoll };
@@ -195,17 +205,9 @@ export function computeSkipReason(state: GameState): SkipReason {
     }
   }
 
+  if (reasons.size === 0) return 'all-targets-blocked';
   if (reasons.size > 1) return 'mixed';
-  const only = [...reasons][0];
-  switch (only) {
-    case 'OVERSHOOT':
-      return 'would-overshoot';
-    case 'INNER_PATH_NO_HIT':
-      return 'inner-path-locked';
-    case 'OWN_PAWN':
-    case 'OPP_SAFE_BLOCKED':
-      return startBlocked ? 'start-blocked' : 'all-targets-blocked';
-    default:
-      return 'all-targets-blocked';
-  }
+  if (startBlocked) return 'start-blocked';
+  const only = [...reasons][0]!;
+  return REASON_TO_SKIP[only];
 }

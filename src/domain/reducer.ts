@@ -63,6 +63,7 @@ function dispatch(state: GameState, command: GameCommand, env: DomainEnv): Step 
       return applyResign(state, command.playerId, env);
     case 'CREATE_ROOM':
       return no('UNKNOWN_COMMAND'); // room creation is a transport op, not an in-state transition
+    /* v8 ignore next 2 -- defensive: the command union above is exhaustive */
     default:
       return no('UNKNOWN_COMMAND');
   }
@@ -275,12 +276,14 @@ export function resolveTurn(
 
 function nextPlayerId(state: GameState): string | null {
   const order = state.playerOrder;
+  /* v8 ignore next -- defensive: a playing game always has an ordered current player */
   if (order.length === 0 || state.currentPlayerId === null) return state.currentPlayerId;
   const idx = order.indexOf(state.currentPlayerId);
   for (let step = 1; step <= order.length; step++) {
     const candidate = order[(idx + step) % order.length]!;
-    if (state.players[candidate]?.status !== 'resigned') return candidate;
+    if (state.players[candidate]!.status !== 'resigned') return candidate;
   }
+  /* v8 ignore next -- defensive: resign-to-win removes the last-player-standing case first */
   return state.currentPlayerId;
 }
 
