@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board';
 import { CowrieRoll } from '../components/CowrieRoll';
 import { PlayerPanel } from '../components/PlayerPanel';
@@ -19,6 +19,31 @@ const SKIP_TEXT: Record<string, string> = {
 export function GamePage({ room }: { room: RoomView }) {
   const { state, me, isMyTurn } = room;
   const [showRules, setShowRules] = useState(false);
+
+  // Hit animation (#8): when a new HIT appears in history, flash a toast and
+  // pulse the victim's pawn as it lands back in its home tray.
+  const [hitToast, setHitToast] = useState<string | null>(null);
+  const [recentHitPawnId, setRecentHitPawnId] = useState<string | null>(null);
+  const hits = (state?.history ?? []).filter((e) => e.type === 'HIT');
+  const latestHit = hits[hits.length - 1];
+  const seenHit = useRef<string | null>(latestHit?.id ?? null);
+  const hitTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!latestHit || latestHit.id === seenHit.current) return;
+    seenHit.current = latestHit.id;
+    const name = (id: string): string => state?.players[id]?.displayName ?? 'A player';
+    const by = latestHit.playerId ? name(latestHit.playerId) : 'A player';
+    const victim = name(String(latestHit.data?.['victimPlayerId'] ?? ''));
+    setHitToast(`💥 ${by} knocked ${victim}'s pawn home!`);
+    setRecentHitPawnId(String(latestHit.data?.['victimPawnId'] ?? '') || null);
+    window.clearTimeout(hitTimer.current);
+    hitTimer.current = window.setTimeout(() => {
+      setHitToast(null);
+      setRecentHitPawnId(null);
+    }, 2600);
+  }, [latestHit, state]);
+  useEffect(() => () => window.clearTimeout(hitTimer.current), []);
+
   if (state === null) return null;
 
   const playing = state.status === 'playing';
@@ -48,6 +73,11 @@ export function GamePage({ room }: { room: RoomView }) {
 
   return (
     <div className="app-shell">
+      {hitToast && (
+        <div className="hit-toast" role="status">
+          {hitToast}
+        </div>
+      )}
       <TurnBanner state={state} />
       {mySkip && (
         <div className="turn-banner" style={{ background: 'rgba(255,180,80,0.25)' }}>
@@ -76,7 +106,7 @@ export function GamePage({ room }: { room: RoomView }) {
               </button>
             </div>
           </div>
-          <PlayerPanel state={state} />
+          <PlayerPanel state={state} recentHitPawnId={recentHitPawnId} />
           {showRules && <RulesPanel />}
           <GameHistory state={state} />
         </div>

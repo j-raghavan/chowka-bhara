@@ -7,7 +7,13 @@ const STATE_TITLE: Record<Pawn['state'], string> = {
   finished: 'finished',
 };
 
-export function PlayerPanel({ state }: { state: GameState }) {
+export function PlayerPanel({
+  state,
+  recentHitPawnId,
+}: {
+  state: GameState;
+  recentHitPawnId?: string | null;
+}) {
   return (
     <div className="panel">
       <h2>Players</h2>
@@ -35,7 +41,9 @@ export function PlayerPanel({ state }: { state: GameState }) {
               {pawns.map((p) => (
                 <span
                   key={p.id}
-                  className={`tray-pawn ${p.state}`}
+                  className={
+                    `tray-pawn ${p.state}` + (p.id === recentHitPawnId ? ' just-home' : '')
+                  }
                   style={{ background: player.color }}
                   title={STATE_TITLE[p.state]}
                 />
