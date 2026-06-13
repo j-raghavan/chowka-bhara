@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { CowrieRoll } from '../../src/components/CowrieRoll';
 import { facesForValue } from '../../src/domain/cowries';
 import type { RollValue } from '../../src/domain/types';
@@ -35,6 +35,23 @@ describe('CowrieRoll value display', () => {
     expect(screen.getByText('Chowka')).toBeInTheDocument();
     rerender(<CowrieRoll faces={faces(12)} live canRoll={false} onRoll={() => {}} />);
     expect(screen.getByText('Bhara')).toBeInTheDocument();
+  });
+
+  it('shakes (shows …) on roll, then reveals the value', () => {
+    vi.useFakeTimers();
+    try {
+      render(<CowrieRoll faces={faces(4)} live canRoll onRoll={() => {}} />);
+      expect(screen.getByText('4')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /roll cowries/i }));
+      expect(screen.getByText('…')).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(700);
+      });
+      expect(screen.getByText('4')).toBeInTheDocument();
+      expect(screen.queryByText('…')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows a dash and disables rolling when there is no roll', () => {

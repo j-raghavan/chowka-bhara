@@ -228,6 +228,42 @@ button {
   gap: 6px;
   justify-content: center;
   margin: 0.4rem 0;
+  transform-origin: center bottom;
+}
+/* Shake the "hand" of cowries while rolling */
+.cowrie-row.shaking {
+  animation: cowrie-shake 0.18s ease-in-out infinite;
+}
+/* Each shell drops/tumbles into place when a new throw is revealed */
+.cowrie-row:not(.shaking) .cowrie {
+  animation: cowrie-drop 0.32s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+@keyframes cowrie-shake {
+  0% {
+    transform: translate(0, 0) rotate(-4deg);
+  }
+  50% {
+    transform: translate(0, -6px) rotate(4deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(-4deg);
+  }
+}
+@keyframes cowrie-drop {
+  0% {
+    transform: translateY(-14px) rotate(-25deg) scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cowrie-row.shaking,
+  .cowrie-row:not(.shaking) .cowrie {
+    animation: none !important;
+  }
 }
 .cowrie {
   position: relative;
