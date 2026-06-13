@@ -1,8 +1,25 @@
+import { useGame } from './app/useGame';
+import { HomePage } from './pages/HomePage';
+import { GamePage } from './pages/GamePage';
+
 export function App() {
+  const { state, startLocal, roll, selectMove, resign, reset } = useGame();
+
+  if (state === null) {
+    return (
+      <div className="app-shell">
+        <HomePage onStart={startLocal} />
+      </div>
+    );
+  }
+
   return (
-    <main>
-      <h1>Chowka Bhara Online</h1>
-      <p>7×7 board game — scaffold. UI is implemented in feature CB6.</p>
-    </main>
+    <GamePage
+      state={state}
+      onRoll={roll}
+      onSelectMove={selectMove}
+      onResign={resign}
+      onNewGame={reset}
+    />
   );
 }

@@ -1,0 +1,267 @@
+:root {
+  --cardboard: #b88a5a;
+  --cardboard-dark: #8d6e63;
+  --ink: #173b4a;
+  --paper: #f4efe3;
+  --lime: #a8d24a;
+  --lime-deep: #8cbb39;
+  --glyph: #1f6fa8;
+  --shadow: rgba(12, 40, 55, 0.25);
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 30% 20%, #1c4a5e, #0f2c3a 70%) fixed;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+/* --- Home --- */
+.home {
+  text-align: center;
+  color: var(--paper);
+}
+.home h1 {
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  letter-spacing: 0.5px;
+  margin: 0.2em 0 0.1em;
+  text-shadow: 0 2px 8px var(--shadow);
+}
+.home .tagline {
+  opacity: 0.85;
+  margin-bottom: 1.5rem;
+}
+.home-board {
+  margin: 0 auto 1.6rem;
+  width: min(92vw, 460px);
+}
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+}
+.home-actions input {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 2px solid var(--lime-deep);
+  font: inherit;
+}
+.btn {
+  background: var(--lime);
+  color: #15331a;
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--lime-deep);
+  transition: transform 0.05s ease;
+}
+.btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--lime-deep);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn.secondary {
+  background: #2faec6;
+  color: #06303a;
+  box-shadow: 0 3px 0 #1d8aa0;
+}
+
+/* --- Game layout --- */
+.game-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 320px;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 820px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.panel {
+  background: rgba(244, 239, 227, 0.96);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 6px 20px var(--shadow);
+}
+.panel h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+}
+
+/* --- Board --- */
+.board-frame {
+  background: var(--cardboard);
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 8px 26px var(--shadow), inset 0 0 0 3px var(--cardboard-dark);
+  width: min(92vw, 560px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+.house {
+  position: relative;
+  border-radius: 6px;
+  border: 1.5px solid rgba(10, 40, 52, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.house.legal {
+  outline: 3px solid #ffe14d;
+  outline-offset: -3px;
+  cursor: pointer;
+}
+.house.legal.hit {
+  outline-color: #ff5d5d;
+}
+.house .glyph {
+  width: 56%;
+  height: 56%;
+  opacity: 0.85;
+}
+.house .mark-x {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--lime-deep);
+  opacity: 0.7;
+}
+.pawn {
+  position: absolute;
+  width: 64%;
+  height: 64%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 4px var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.pawn.finished {
+  box-shadow: 0 0 0 3px gold, 0 2px 4px var(--shadow);
+}
+
+/* --- Cowries / controls --- */
+.cowrie-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 0.4rem 0;
+}
+.cowrie {
+  width: 26px;
+  height: 34px;
+  border-radius: 50% 50% 45% 45%;
+  border: 2px solid #b9a06a;
+}
+.cowrie.open {
+  background: #f3e7c4;
+}
+.cowrie.closed {
+  background: #7a5b34;
+}
+.roll-value {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.roll-name {
+  text-align: center;
+  color: #1d8aa0;
+  font-weight: 700;
+  min-height: 1.2em;
+}
+
+/* --- Players / history --- */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.player-row.current {
+  background: rgba(168, 210, 74, 0.3);
+  border-radius: 8px;
+}
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex: none;
+}
+.home-pawns {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.history {
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.history li {
+  list-style: none;
+}
+.turn-banner {
+  text-align: center;
+  font-weight: 700;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: rgba(47, 174, 198, 0.18);
+  margin-bottom: 0.75rem;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.rules dl {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.rules dt {
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
