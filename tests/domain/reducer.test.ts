@@ -86,6 +86,27 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
   });
 });
 
+describe('move events carry the bonus flag (L-CB11)', () => {
+  it('flags grantsBonusTurn on a hit move and not on a plain move', () => {
+    let s = makePlayingState({ sides: ['south', 'north'] });
+    s = withPawnAt(s, 'south-p0', 6);
+    s = withPawnAt(s, 'north-p0', 21);
+    const env = envForRolls([3]);
+    const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
+    const hitId = rolled.state.legalMoves.find((m) => m.wouldHitPawnId)!.id;
+    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: hitId }), env);
+    const moveEvent = moved.state.history.find((e) => e.type === 'MOVE')!;
+    expect(moveEvent.data?.['grantsBonusTurn']).toBe(true);
+
+    const s2 = withPawnAt(makePlayingState(), 'south-p0', 5);
+    const env2 = envForRolls([3]);
+    const r2 = applyCommand(s2, cmd({ type: 'ROLL', playerId: 'south' }), env2);
+    const id2 = r2.state.legalMoves[0]!.id;
+    const m2 = applyCommand(r2.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: id2 }), env2);
+    expect(m2.state.history.find((e) => e.type === 'MOVE')!.data?.['grantsBonusTurn']).toBe(false);
+  });
+});
+
 describe('no-legal-moves auto-resolution (CB4-FR5, L-CB3)', () => {
   it('auto-skips and advances on a non-bonus roll with no moves', () => {
     const s = makePlayingState({ sides: ['south', 'north'] }); // all home

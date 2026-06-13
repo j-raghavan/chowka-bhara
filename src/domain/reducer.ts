@@ -219,6 +219,8 @@ function applyMove(state: GameState, move: LegalMove, env: DomainEnv): MoveAppli
       toIndex: move.toIndex,
       hit: didHit,
       finish: move.wouldFinish,
+      // Whether this move grants another turn (L-CB11): hit-bonus or a 6/12 roll.
+      grantsBonusTurn: didHit || grantsBonus(move.rollValue),
     }),
   );
 
