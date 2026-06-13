@@ -143,6 +143,40 @@ describe('FakeTransport — rooms, spectators, reconnect (CB5-FR9, AC7)', () => 
     expect(t.getState(gameId)!.revision).toBe(rev); // unchanged
   });
 
+  it('honours an explicit gameId on createRoom', async () => {
+    const t = new FakeTransport(makeEnv());
+    const created = await t.createRoom({ hostName: 'host', gameId: 'fixed-room' });
+    expect(created.gameId).toBe('fixed-room');
+    expect(t.getState('fixed-room')).toBeDefined();
+  });
+
+  it('ignores a reclaim token issued for a different game', async () => {
+    const t = new FakeTransport(makeEnv());
+    const a = await t.createRoom({ hostName: 'hostA', gameId: 'A' });
+    await t.createRoom({ hostName: 'hostB', gameId: 'B' });
+    // a.reclaimToken belongs to game A; using it to join B must fall through to a fresh seat.
+    const join = await t.joinRoom({ gameId: 'B', displayName: 'mallory', reclaimToken: a.reclaimToken });
+    expect(join.spectator).toBe(false);
+    expect(join.playerId).not.toBe(a.playerId);
+  });
+
+  it('makes a joiner a spectator once the game has started', async () => {
+    const t = new FakeTransport(makeEnv());
+    const { gameId, playerId: host } = await t.createRoom({ hostName: 'host' });
+    await t.joinRoom({ gameId, displayName: 'p2' });
+    await t.transactCommand({
+      commandId: 'start',
+      type: 'START_GAME',
+      gameId,
+      playerId: host,
+      expectedRevision: t.getState(gameId)!.revision,
+      issuedAt: 0,
+    });
+    expect(t.getState(gameId)!.status).toBe('playing');
+    const late = await t.joinRoom({ gameId, displayName: 'latecomer' });
+    expect(late.spectator).toBe(true);
+  });
+
   it('updatePresence is a no-op for unknown room or player', async () => {
     const t = new FakeTransport(makeEnv());
     await expect(t.updatePresence('nope', 'x', 'connected')).resolves.toBeUndefined();

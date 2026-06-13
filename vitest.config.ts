@@ -12,7 +12,14 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/domain/**', 'src/app/**', 'src/transport/**'],
-      exclude: ['src/**/index.ts', '**/*.d.ts'],
+      exclude: [
+        'src/**/index.ts',
+        '**/*.d.ts',
+        // Platform/IO glue (BroadcastChannel, real backend clients): exercised
+        // in the browser / against a live backend, not unit-tested.
+        'src/transport/broadcast-notifier.ts',
+        'src/transport/supabase-transport.ts',
+      ],
       // Domain + application + transport logic must clear 97% (project CLAUDE.md).
       thresholds: {
         statements: 97,
