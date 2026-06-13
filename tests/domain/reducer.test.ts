@@ -24,14 +24,22 @@ describe('command validation (CB4-AC1..AC3, AC7)', () => {
 
   it('rejects SELECT_MOVE before rolling (CB4-AC2)', () => {
     const s = makePlayingState();
-    const res = applyCommand(s, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: 'x' }), makeEnv());
+    const res = applyCommand(
+      s,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: 'x' }),
+      makeEnv(),
+    );
     expect(res.rejection).toBe('WRONG_PHASE');
   });
 
   it('rejects a move that is not in legalMoves (CB4-AC3)', () => {
     let s = withRoll(makePlayingState(), 1);
     s = { ...s, legalMoves: [] };
-    const res = applyCommand(s, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: 'nope' }), makeEnv());
+    const res = applyCommand(
+      s,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: 'nope' }),
+      makeEnv(),
+    );
     // No roll set via reducer here; emulate awaiting-move with empty list -> MOVE_NOT_LEGAL
     expect(['MOVE_NOT_LEGAL']).toContain(res.rejection);
   });
@@ -54,7 +62,11 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
     const s = makePlayingState({ sides: ['south', 'north'] });
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves[0]!.id;
-    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }), env);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }),
+      env,
+    );
     expect(moved.accepted).toBe(true);
     expect(moved.state.currentPlayerId).toBe('north');
     expect(moved.state.currentRoll).toBeNull();
@@ -66,7 +78,11 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
     const env = envForRolls([6]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.pawnId === 'south-p0')!.id;
-    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }), env);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }),
+      env,
+    );
     expect(moved.state.currentPlayerId).toBe('south');
     expect(moved.state.pawns['south-p0']!.pathIndex).toBe(11);
   });
@@ -78,7 +94,11 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
     const env = envForRolls([3]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.wouldHitPawnId === 'north-p0')!.id;
-    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }), env);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }),
+      env,
+    );
     expect(moved.state.currentPlayerId).toBe('south'); // hit grants bonus
     expect(moved.state.pawns['north-p0']!.state).toBe('home'); // victim sent home
     expect(moved.state.pawns['south-p0']!.pathIndex).toBe(9); // mover occupies target
@@ -94,7 +114,11 @@ describe('move events carry the bonus flag (L-CB11)', () => {
     const env = envForRolls([3]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const hitId = rolled.state.legalMoves.find((m) => m.wouldHitPawnId)!.id;
-    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: hitId }), env);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: hitId }),
+      env,
+    );
     const moveEvent = moved.state.history.find((e) => e.type === 'MOVE')!;
     expect(moveEvent.data?.['grantsBonusTurn']).toBe(true);
 
@@ -102,7 +126,11 @@ describe('move events carry the bonus flag (L-CB11)', () => {
     const env2 = envForRolls([3]);
     const r2 = applyCommand(s2, cmd({ type: 'ROLL', playerId: 'south' }), env2);
     const id2 = r2.state.legalMoves[0]!.id;
-    const m2 = applyCommand(r2.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: id2 }), env2);
+    const m2 = applyCommand(
+      r2.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: id2 }),
+      env2,
+    );
     expect(m2.state.history.find((e) => e.type === 'MOVE')!.data?.['grantsBonusTurn']).toBe(false);
   });
 });
@@ -131,17 +159,25 @@ describe('finish and winner (CB3-AC6, AC10)', () => {
     const env = envForRolls([1]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.pawnId === 'south-p0')!.id;
-    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }), env);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }),
+      env,
+    );
     expect(moved.state.pawns['south-p0']!.state).toBe('finished');
   });
 
-  it('declares a winner when all of a player\'s pawns are finished (CB3-AC10)', () => {
+  it("declares a winner when all of a player's pawns are finished (CB3-AC10)", () => {
     let s = withHasHit(makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 }), 'south');
     s = withPawnAt(s, 'south-p0', 47);
     const env = envForRolls([1]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.pawnId === 'south-p0')!.id;
-    const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }), env);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }),
+      env,
+    );
     expect(moved.state.status).toBe('finished');
     expect(moved.state.winnerPlayerId).toBe('south');
     expect(moved.state.history.some((e) => e.type === 'WIN')).toBe(true);

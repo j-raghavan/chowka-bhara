@@ -21,7 +21,8 @@ export function GamePage({ room }: { room: RoomView }) {
   if (state === null) return null;
 
   const playing = state.status === 'playing';
-  const canRoll = playing && isMyTurn && state.currentRoll === null && state.winnerPlayerId === null;
+  const canRoll =
+    playing && isMyTurn && state.currentRoll === null && state.winnerPlayerId === null;
   const interactive = playing && isMyTurn;
 
   // Surface the most recent skip for the local player (CB6-FR12).
@@ -34,7 +35,11 @@ export function GamePage({ room }: { room: RoomView }) {
   return (
     <div className="app-shell">
       <TurnBanner state={state} />
-      {mySkip && <div className="turn-banner" style={{ background: 'rgba(255,180,80,0.25)' }}>Skipped: {mySkip}.</div>}
+      {mySkip && (
+        <div className="turn-banner" style={{ background: 'rgba(255,180,80,0.25)' }}>
+          Skipped: {mySkip}.
+        </div>
+      )}
       <div className="game-layout">
         <Board state={state} interactive={interactive} onSelectMove={room.selectMove} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -45,7 +50,11 @@ export function GamePage({ room }: { room: RoomView }) {
               <button className="btn secondary" onClick={() => setShowRules((v) => !v)}>
                 {showRules ? 'Hide rules' : 'Rules'}
               </button>
-              <button className="btn secondary" onClick={room.resign} disabled={!playing || !!me?.spectator}>
+              <button
+                className="btn secondary"
+                onClick={room.resign}
+                disabled={!playing || !!me?.spectator}
+              >
                 Resign
               </button>
               <button className="btn" onClick={room.goHome}>

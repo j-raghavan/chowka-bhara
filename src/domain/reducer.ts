@@ -24,7 +24,11 @@ type Step =
   | { readonly ok: true; readonly state: GameState; readonly events: readonly GameEvent[] }
   | { readonly ok: false; readonly rejection: CommandRejectionCode };
 
-const ok = (state: GameState, events: readonly GameEvent[] = []): Step => ({ ok: true, state, events });
+const ok = (state: GameState, events: readonly GameEvent[] = []): Step => ({
+  ok: true,
+  state,
+  events,
+});
 const no = (rejection: CommandRejectionCode): Step => ({ ok: false, rejection });
 
 /** Single entry point. */
@@ -96,7 +100,9 @@ function applyLeave(state: GameState, playerId: string, env: DomainEnv): Step {
     );
     const playerOrder = state.playerOrder.filter((id) => id !== playerId);
     const hostId = state.hostId === playerId ? (playerOrder[0] ?? null) : state.hostId;
-    return ok({ ...state, players, pawns, playerOrder, hostId }, [makeEvent('LEAVE', env, playerId)]);
+    return ok({ ...state, players, pawns, playerOrder, hostId }, [
+      makeEvent('LEAVE', env, playerId),
+    ]);
   }
   // In play: mark disconnected (v0.1 does not auto-skip the current player).
   const next: GameState = {
@@ -110,7 +116,8 @@ function applyStart(state: GameState, playerId: string, env: DomainEnv): Step {
   if (state.status !== 'lobby') return no('NOT_IN_LOBBY');
   if (state.hostId !== playerId) return no('NOT_HOST');
   const count = state.playerOrder.length;
-  if (count < state.config.minPlayers || count > state.config.maxPlayers) return no('BAD_PLAYER_COUNT');
+  if (count < state.config.minPlayers || count > state.config.maxPlayers)
+    return no('BAD_PLAYER_COUNT');
 
   const { players, pawns, playerOrder } = assignSidesAndPawns(
     state.players,
@@ -145,7 +152,11 @@ function applyRoll(state: GameState, playerId: string, env: DomainEnv): Step {
   if (state.currentRoll !== null) return no('WRONG_PHASE'); // already rolled, awaiting move
 
   const roll = rollCowries(env);
-  let s: GameState = { ...state, currentRoll: roll, turnChainRollCount: state.turnChainRollCount + 1 };
+  let s: GameState = {
+    ...state,
+    currentRoll: roll,
+    turnChainRollCount: state.turnChainRollCount + 1,
+  };
   const legalMoves = generateLegalMoves(s);
   s = { ...s, legalMoves };
   const events: GameEvent[] = [
@@ -200,13 +211,23 @@ function applyMove(state: GameState, move: LegalMove, env: DomainEnv): MoveAppli
     if (victim !== undefined) {
       pawns[victim.id] = { ...victim, state: 'home', pathIndex: null, finishedOrder: null };
       didHit = true;
-      events.push(makeEvent('HIT', env, move.playerId, { victimPawnId: victim.id, victimPlayerId: victim.playerId }));
+      events.push(
+        makeEvent('HIT', env, move.playerId, {
+          victimPawnId: victim.id,
+          victimPlayerId: victim.playerId,
+        }),
+      );
     }
   }
 
   const mover = pawns[move.pawnId]!;
   if (move.wouldFinish) {
-    pawns[mover.id] = { ...mover, state: 'finished', pathIndex: FINISH_INDEX, finishedOrder: nextFinishedOrder(state) };
+    pawns[mover.id] = {
+      ...mover,
+      state: 'finished',
+      pathIndex: FINISH_INDEX,
+      finishedOrder: nextFinishedOrder(state),
+    };
     events.push(makeEvent('FINISH', env, move.playerId, { pawnId: mover.id }));
   } else {
     pawns[mover.id] = { ...mover, state: 'active', pathIndex: move.toIndex, finishedOrder: null };
@@ -254,14 +275,20 @@ export function resolveTurn(
   env: DomainEnv,
 ): { state: GameState; events: readonly GameEvent[] } {
   if (gameOver) {
-    return { state: { ...state, turnChainRollCount: 0, currentRoll: null, legalMoves: [] }, events: [] };
+    return {
+      state: { ...state, turnChainRollCount: 0, currentRoll: null, legalMoves: [] },
+      events: [],
+    };
   }
   const bonus = (rollValue !== null && grantsBonus(rollValue)) || didHit;
   const capReached = state.turnChainRollCount >= state.config.maxTurnChain;
 
   if (bonus && !capReached) {
     const s: GameState = { ...state, currentRoll: null, legalMoves: [] };
-    return { state: s, events: [makeEvent('BONUS', env, state.currentPlayerId, { reason: didHit ? 'hit' : 'roll' })] };
+    return {
+      state: s,
+      events: [makeEvent('BONUS', env, state.currentPlayerId, { reason: didHit ? 'hit' : 'roll' })],
+    };
   }
 
   const nextId = nextPlayerId(state);

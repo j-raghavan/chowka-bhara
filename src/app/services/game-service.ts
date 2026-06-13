@@ -14,7 +14,12 @@ import type {
 
 /** The revision-bearing portion a command builder produces; the service fills in the rest. */
 type PartialCommand = { readonly expectedRevision: number } & (
-  | { readonly type: Exclude<CommandType, 'SELECT_MOVE' | 'CREATE_ROOM' | 'JOIN_ROOM' | 'LEAVE_ROOM'> }
+  | {
+      readonly type: Exclude<
+        CommandType,
+        'SELECT_MOVE' | 'CREATE_ROOM' | 'JOIN_ROOM' | 'LEAVE_ROOM'
+      >;
+    }
   | { readonly type: 'SELECT_MOVE'; readonly moveId: string }
 );
 
@@ -30,9 +35,7 @@ export class GameService {
 
   joinRoom(gameId: string, displayName: string, reclaimToken?: string): Promise<JoinRoomResult> {
     return this.transport.joinRoom(
-      reclaimToken === undefined
-        ? { gameId, displayName }
-        : { gameId, displayName, reclaimToken },
+      reclaimToken === undefined ? { gameId, displayName } : { gameId, displayName, reclaimToken },
     );
   }
 
@@ -45,7 +48,11 @@ export class GameService {
   }
 
   selectMove(gameId: string, playerId: string, moveId: string): Promise<CommandResult> {
-    return this.submit(gameId, playerId, (rev) => ({ type: 'SELECT_MOVE', moveId, expectedRevision: rev }));
+    return this.submit(gameId, playerId, (rev) => ({
+      type: 'SELECT_MOVE',
+      moveId,
+      expectedRevision: rev,
+    }));
   }
 
   resign(gameId: string, playerId: string): Promise<CommandResult> {
@@ -78,6 +85,8 @@ export class GameService {
       ...partial,
     };
     // Shape matches a GameCommand variant; the reducer validates the rest.
-    return this.transport.transactCommand(command as Parameters<GameTransport['transactCommand']>[0]);
+    return this.transport.transactCommand(
+      command as Parameters<GameTransport['transactCommand']>[0],
+    );
   }
 }

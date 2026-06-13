@@ -3,12 +3,7 @@
  * transaction on `expectedRevision`; the reducer validates inside the
  * transaction. Adapters (Fake/Firebase/Supabase) are interchangeable.
  */
-import type {
-  CommandRejectionCode,
-  GameCommand,
-  GameState,
-  PlayerStatus,
-} from '../domain/types';
+import type { CommandRejectionCode, GameCommand, GameState, PlayerStatus } from '../domain/types';
 
 export type Unsubscribe = () => void;
 

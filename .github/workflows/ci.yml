@@ -19,6 +19,8 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Format check
+        run: npm run format:check
       - name: Test with coverage (domain/app/transport >= 97%)
         run: npm run coverage
       - name: Build

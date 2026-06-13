@@ -18,8 +18,7 @@ body {
   margin: 0;
   font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 30% 20%, #1c4a5e, #0f2c3a 70%) fixed;
+  background: radial-gradient(circle at 30% 20%, #1c4a5e, #0f2c3a 70%) fixed;
   min-height: 100vh;
 }
 
@@ -119,7 +118,9 @@ button {
   background: var(--cardboard);
   padding: 12px;
   border-radius: 10px;
-  box-shadow: 0 8px 26px var(--shadow), inset 0 0 0 3px var(--cardboard-dark);
+  box-shadow:
+    0 8px 26px var(--shadow),
+    inset 0 0 0 3px var(--cardboard-dark);
   width: min(92vw, 560px);
   aspect-ratio: 1;
   margin: 0 auto;
@@ -183,7 +184,9 @@ button {
   font-weight: 700;
 }
 .pawn.finished {
-  box-shadow: 0 0 0 3px gold, 0 2px 4px var(--shadow);
+  box-shadow:
+    0 0 0 3px gold,
+    0 2px 4px var(--shadow);
 }
 
 /* --- Cowries / controls --- */

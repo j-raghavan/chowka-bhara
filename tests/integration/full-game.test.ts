@@ -25,7 +25,11 @@ describe('full traversal to a real winner via the reducer (no near-finish seedin
       expect(rolled.accepted).toBe(true);
       expect(rolled.state.legalMoves).toHaveLength(1);
       const move = rolled.state.legalMoves[0]!;
-      const moved = applyCommand(rolled.state, cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: move.id }), env);
+      const moved = applyCommand(
+        rolled.state,
+        cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: move.id }),
+        env,
+      );
       expect(moved.accepted).toBe(true);
       s = moved.state;
       const pawn = s.pawns['south-p0']!;

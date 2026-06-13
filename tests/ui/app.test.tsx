@@ -35,6 +35,8 @@ describe('App online flow (smoke)', () => {
     expect(await screen.findByRole('heading', { name: /game lobby/i })).toBeInTheDocument();
     expect(screen.getByText(/alice/i)).toBeInTheDocument();
     // Host sees a start control (disabled until 2+ players).
-    expect(screen.getByRole('button', { name: /need 2\+ players|start game/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /need 2\+ players|start game/i }),
+    ).toBeInTheDocument();
   });
 });

@@ -11,7 +11,8 @@ export interface HomePageProps {
 export function HomePage({ onCreate }: HomePageProps) {
   const [name, setName] = useState('');
   const demo: GameState = useMemo(
-    () => createInitialState({ gameId: 'demo', hostId: 'demo', hostName: 'demo' }, makeProductionEnv()),
+    () =>
+      createInitialState({ gameId: 'demo', hostId: 'demo', hostName: 'demo' }, makeProductionEnv()),
     [],
   );
 

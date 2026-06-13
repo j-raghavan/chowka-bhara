@@ -51,7 +51,8 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
     const side = state.players[hoveredMove.playerId]?.side;
     if (side) {
       const from = hoveredMove.fromIndex ?? 0;
-      for (const coord of pathTrail(side, from, hoveredMove.toIndex)) previewKeys.add(coordKey(coord));
+      for (const coord of pathTrail(side, from, hoveredMove.toIndex))
+        previewKeys.add(coordKey(coord));
     }
   }
 
@@ -111,7 +112,11 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
             >
               {role === 'center' && <CrownGlyph />}
               {role === 'start' && side && <PawnGlyph color={SIDE_COLORS[side]} />}
-              {role === 'safe' && <span className="mark-x" aria-hidden="true">×</span>}
+              {role === 'safe' && (
+                <span className="mark-x" aria-hidden="true">
+                  ×
+                </span>
+              )}
               {occupant && (
                 <span className="pawn" style={{ background: occupant.color }}>
                   {occupant.label}

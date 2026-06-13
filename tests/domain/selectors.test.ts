@@ -15,7 +15,24 @@ describe('deriveTurnPhase (G1)', () => {
   it('is awaiting-move when legal moves exist', () => {
     let s = withRoll(makePlayingState(), 3);
     s = withPawnAt(s, 'south-p0', 5);
-    s = { ...s, legalMoves: [{ id: 'm', type: 'move', playerId: 'south', pawnId: 'south-p0', rollValue: 3, from: [4, 6], to: [3, 6], fromIndex: 5, toIndex: 8, wouldHitPawnId: null, wouldFinish: false }] };
+    s = {
+      ...s,
+      legalMoves: [
+        {
+          id: 'm',
+          type: 'move',
+          playerId: 'south',
+          pawnId: 'south-p0',
+          rollValue: 3,
+          from: [4, 6],
+          to: [3, 6],
+          fromIndex: 5,
+          toIndex: 8,
+          wouldHitPawnId: null,
+          wouldFinish: false,
+        },
+      ],
+    };
     expect(deriveTurnPhase(s)).toBe('awaiting-move');
   });
 

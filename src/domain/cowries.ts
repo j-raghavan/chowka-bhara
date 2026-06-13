@@ -2,13 +2,7 @@
  * Six-cowrie scoring, bonus detection, and roll construction.
  * Randomness is injected (L-CB4): no Math.random() here.
  */
-import type {
-  CowrieFace,
-  CowrieRandomSource,
-  CowrieRoll,
-  DomainEnv,
-  RollValue,
-} from './types';
+import type { CowrieFace, CowrieRandomSource, CowrieRoll, DomainEnv, RollValue } from './types';
 
 export const COWRIE_COUNT = 6 as const;
 
@@ -55,9 +49,7 @@ export function rollCowries(env: DomainEnv): CowrieRoll {
  * - array seed: a fixed sequence of pre-rolled face arrays, consumed in order
  *   and cycled when exhausted.
  */
-export function seededRandomSource(
-  seed: readonly CowrieFace[][] | number,
-): CowrieRandomSource {
+export function seededRandomSource(seed: readonly CowrieFace[][] | number): CowrieRandomSource {
   if (typeof seed === 'number') {
     let state = seed >>> 0;
     const nextFloat = (): number => {
@@ -69,9 +61,7 @@ export function seededRandomSource(
     };
     return {
       rollFaces(count: number): readonly CowrieFace[] {
-        return Array.from({ length: count }, () =>
-          nextFloat() < 0.5 ? 'open' : 'closed',
-        );
+        return Array.from({ length: count }, () => (nextFloat() < 0.5 ? 'open' : 'closed'));
       },
     };
   }
@@ -93,7 +83,5 @@ export function seededRandomSource(
 /** Convenience: an array of `open` then `closed` faces producing a given value. */
 export function facesForValue(value: RollValue): readonly CowrieFace[] {
   const open = value === 12 ? 0 : value;
-  return Array.from({ length: COWRIE_COUNT }, (_unused, i) =>
-    i < open ? 'open' : 'closed',
-  );
+  return Array.from({ length: COWRIE_COUNT }, (_unused, i) => (i < open ? 'open' : 'closed'));
 }

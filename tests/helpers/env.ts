@@ -24,9 +24,7 @@ export function seqIdSource(prefix = 'id'): IdSource {
 }
 
 /** Deterministic DomainEnv. Faces default to a seeded PRNG (seed 1). */
-export function makeEnv(
-  faces?: readonly CowrieFace[][] | number,
-): DomainEnv {
+export function makeEnv(faces?: readonly CowrieFace[][] | number): DomainEnv {
   return {
     clock: fixedClock(),
     ids: seqIdSource(),

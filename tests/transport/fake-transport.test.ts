@@ -3,7 +3,12 @@ import { FakeTransport } from '../../src/transport/fake-transport';
 import type { GameCommand } from '../../src/domain/types';
 import { makeEnv } from '../helpers/env';
 
-function joinCmd(gameId: string, playerId: string, expectedRevision: number, commandId: string): GameCommand {
+function joinCmd(
+  gameId: string,
+  playerId: string,
+  expectedRevision: number,
+  commandId: string,
+): GameCommand {
   return {
     commandId,
     type: 'JOIN_ROOM',
@@ -90,7 +95,11 @@ describe('FakeTransport — rooms, spectators, reconnect (CB5-FR9, AC7)', () => 
     await t.updatePresence(gameId, join.playerId, 'disconnected');
     expect(t.getState(gameId)!.players[join.playerId]!.status).toBe('disconnected');
 
-    const reclaim = await t.joinRoom({ gameId, displayName: 'alice', reclaimToken: join.reclaimToken });
+    const reclaim = await t.joinRoom({
+      gameId,
+      displayName: 'alice',
+      reclaimToken: join.reclaimToken,
+    });
     expect(reclaim.spectator).toBe(false);
     expect(reclaim.playerId).toBe(join.playerId);
     expect(t.getState(gameId)!.players[join.playerId]!.status).toBe('connected');
@@ -155,7 +164,11 @@ describe('FakeTransport — rooms, spectators, reconnect (CB5-FR9, AC7)', () => 
     const a = await t.createRoom({ hostName: 'hostA', gameId: 'A' });
     await t.createRoom({ hostName: 'hostB', gameId: 'B' });
     // a.reclaimToken belongs to game A; using it to join B must fall through to a fresh seat.
-    const join = await t.joinRoom({ gameId: 'B', displayName: 'mallory', reclaimToken: a.reclaimToken });
+    const join = await t.joinRoom({
+      gameId: 'B',
+      displayName: 'mallory',
+      reclaimToken: a.reclaimToken,
+    });
     expect(join.spectator).toBe(false);
     expect(join.playerId).not.toBe(a.playerId);
   });

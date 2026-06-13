@@ -109,7 +109,10 @@ describe('destinationRule gate (G-3, CB3-FR9/FR10/FR11)', () => {
     // south start [6,3] is safe; north idx 12 sits on [6,3]
     let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 1);
     s = withPawnAt(s, 'north-p0', 12); // occupies south start [6,3]
-    const r = destinationRule(cand({ pawnId: 'south-p0', type: 'enter', fromIndex: null, toIndex: 0 }), ctxFor(s));
+    const r = destinationRule(
+      cand({ pawnId: 'south-p0', type: 'enter', fromIndex: null, toIndex: 0 }),
+      ctxFor(s),
+    );
     expect(r.ok === false && r.reason).toBe('OPP_SAFE_BLOCKED');
   });
 });

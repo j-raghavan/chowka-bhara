@@ -8,7 +8,8 @@ export function LobbyPage({ room }: { room: RoomView }) {
   if (state === null) return null;
 
   const seats = state.playerOrder.map((id) => state.players[id]).filter((p) => p !== undefined);
-  const canStart = isHost && seats.length >= state.config.minPlayers && seats.length <= state.config.maxPlayers;
+  const canStart =
+    isHost && seats.length >= state.config.minPlayers && seats.length <= state.config.maxPlayers;
 
   const share = (): void => {
     void navigator.clipboard?.writeText(window.location.href).then(

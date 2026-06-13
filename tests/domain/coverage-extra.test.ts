@@ -36,11 +36,17 @@ describe('invariants extra branches', () => {
     const base = makePlayingState();
     const broken = {
       ...base,
-      currentRoll: { id: 'r', faces: [], openCount: 0, value: 7 as 1, grantsBonusTurn: false, rolledAt: 0 },
+      currentRoll: {
+        id: 'r',
+        faces: [],
+        openCount: 0,
+        value: 7 as 1,
+        grantsBonusTurn: false,
+        rolledAt: 0,
+      },
     };
     expect(() => assertInvariants(broken)).toThrow(/I-CB8/);
   });
-
 });
 
 describe('computeSkipReason extra branches', () => {
@@ -64,7 +70,13 @@ describe('occupancy skips pawns with no player record', () => {
       ...base,
       pawns: {
         ...base.pawns,
-        'ghost-p0': { id: 'ghost-p0', playerId: 'ghost', state: 'active' as const, pathIndex: 5, finishedOrder: null },
+        'ghost-p0': {
+          id: 'ghost-p0',
+          playerId: 'ghost',
+          state: 'active' as const,
+          pathIndex: 5,
+          finishedOrder: null,
+        },
       },
     };
     expect(buildOccupancy(s).size).toBe(0);

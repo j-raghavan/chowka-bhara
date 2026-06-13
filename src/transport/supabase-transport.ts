@@ -86,7 +86,12 @@ export class SupabaseTransport implements GameTransport {
       if (record !== null && record.game_id === input.gameId && state.players[record.player_id]) {
         await this.updatePresence(input.gameId, record.player_id, 'connected');
         state = await this.fetch(input.gameId);
-        return { playerId: record.player_id, reclaimToken: input.reclaimToken, spectator: false, state: state! };
+        return {
+          playerId: record.player_id,
+          reclaimToken: input.reclaimToken,
+          spectator: false,
+          state: state!,
+        };
       }
     }
 
@@ -149,7 +154,11 @@ export class SupabaseTransport implements GameTransport {
       .select();
     if (error || data === null || data.length === 0) {
       const current = await this.fetch(command.gameId);
-      return { accepted: false, revision: current?.revision ?? state?.revision ?? 0, rejection: 'STALE_REVISION' };
+      return {
+        accepted: false,
+        revision: current?.revision ?? state?.revision ?? 0,
+        rejection: 'STALE_REVISION',
+      };
     }
     this.cache.set(command.gameId, next);
     return result;
@@ -162,14 +171,21 @@ export class SupabaseTransport implements GameTransport {
     if (player === undefined) return;
     const next: GameState = {
       ...state,
-      players: { ...state.players, [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() } },
+      players: {
+        ...state.players,
+        [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() },
+      },
     };
     await this.client.from('rooms').update({ state: next }).eq('game_id', gameId);
     this.cache.set(gameId, next);
   }
 
   private async fetch(gameId: string): Promise<GameState | undefined> {
-    const { data } = await this.client.from('rooms').select('state').eq('game_id', gameId).maybeSingle();
+    const { data } = await this.client
+      .from('rooms')
+      .select('state')
+      .eq('game_id', gameId)
+      .maybeSingle();
     const state = (data as { state: GameState } | null)?.state;
     if (state !== undefined) this.cache.set(gameId, state);
     return state;
@@ -177,7 +193,9 @@ export class SupabaseTransport implements GameTransport {
 
   private async issueToken(gameId: string, playerId: string): Promise<string> {
     const token = this.env.ids.next();
-    await this.client.from('reclaim_tokens').insert({ token, game_id: gameId, player_id: playerId });
+    await this.client
+      .from('reclaim_tokens')
+      .insert({ token, game_id: gameId, player_id: playerId });
     return token;
   }
 

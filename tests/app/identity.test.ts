@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { clearIdentity, loadIdentity, saveIdentity, type RoomIdentity } from '../../src/app/identity';
+import {
+  clearIdentity,
+  loadIdentity,
+  saveIdentity,
+  type RoomIdentity,
+} from '../../src/app/identity';
 
 function memStorage(): Storage {
   const m = new Map<string, string>();

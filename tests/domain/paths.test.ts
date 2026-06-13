@@ -80,9 +80,7 @@ describe('validatePaths', () => {
   });
 
   it('rejects a path of the wrong length', () => {
-    expect(() =>
-      validatePaths({ ...PATHS, south: SOUTH_PATH.slice(0, 48) }),
-    ).toThrow(/length/);
+    expect(() => validatePaths({ ...PATHS, south: SOUTH_PATH.slice(0, 48) })).toThrow(/length/);
   });
 
   it('rejects a path that does not start at the start house', () => {

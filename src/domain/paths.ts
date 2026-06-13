@@ -21,22 +21,57 @@ export const SOUTH_PATH: readonly Coord[] = [
   [6, 3],
 
   // Outer ring (perimeter), anti-clockwise from South start (indices 1-23)
-  [6, 4], [6, 5], [6, 6],
-  [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
-  [0, 5], [0, 4], [0, 3], [0, 2], [0, 1], [0, 0],
-  [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0],
-  [6, 1], [6, 2],
+  [6, 4],
+  [6, 5],
+  [6, 6],
+  [5, 6],
+  [4, 6],
+  [3, 6],
+  [2, 6],
+  [1, 6],
+  [0, 6],
+  [0, 5],
+  [0, 4],
+  [0, 3],
+  [0, 2],
+  [0, 1],
+  [0, 0],
+  [1, 0],
+  [2, 0],
+  [3, 0],
+  [4, 0],
+  [5, 0],
+  [6, 0],
+  [6, 1],
+  [6, 2],
 
   // Middle 5x5 ring (indices 24-39)
-  [5, 2], [5, 1],
-  [4, 1], [3, 1], [2, 1], [1, 1],
-  [1, 2], [1, 3], [1, 4], [1, 5],
-  [2, 5], [3, 5], [4, 5], [5, 5],
-  [5, 4], [5, 3],
+  [5, 2],
+  [5, 1],
+  [4, 1],
+  [3, 1],
+  [2, 1],
+  [1, 1],
+  [1, 2],
+  [1, 3],
+  [1, 4],
+  [1, 5],
+  [2, 5],
+  [3, 5],
+  [4, 5],
+  [5, 5],
+  [5, 4],
+  [5, 3],
 
   // Inner 3x3 ring (indices 40-47)
-  [4, 3], [4, 4], [3, 4], [2, 4],
-  [2, 3], [2, 2], [3, 2], [4, 2],
+  [4, 3],
+  [4, 4],
+  [3, 4],
+  [2, 4],
+  [2, 3],
+  [2, 2],
+  [3, 2],
+  [4, 2],
 
   // Finish (index 48)
   [3, 3],
@@ -64,9 +99,7 @@ export function coordAt(side: PlayerSide, pathIndex: number): Coord {
  * length 49, index 0 = start house, index 48 = center, no duplicates,
  * every coordinate in bounds. Throws on the first violation.
  */
-export function validatePaths(
-  paths: Readonly<Record<PlayerSide, readonly Coord[]>> = PATHS,
-): void {
+export function validatePaths(paths: Readonly<Record<PlayerSide, readonly Coord[]>> = PATHS): void {
   for (const side of Object.keys(paths) as PlayerSide[]) {
     const path = paths[side];
     if (path.length !== FINISH_INDEX + 1) {

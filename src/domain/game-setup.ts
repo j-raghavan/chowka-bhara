@@ -56,12 +56,7 @@ export function createInitialState(input: CreateRoomInput, env: DomainEnv): Game
 }
 
 /** A provisional lobby seat; the definitive side is assigned at START_GAME. */
-export function newSeat(
-  id: string,
-  displayName: string,
-  side: PlayerSide,
-  now: number,
-): Player {
+export function newSeat(id: string, displayName: string, side: PlayerSide, now: number): Player {
   return {
     id,
     displayName,

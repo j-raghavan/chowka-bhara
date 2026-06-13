@@ -10,7 +10,8 @@ export class BroadcastNotifier implements RoomNotifier {
   private readonly channel: BroadcastChannel | null;
 
   constructor(channelName = 'chowka-bhara') {
-    this.channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null;
+    this.channel =
+      typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null;
   }
 
   post(gameId: string): void {

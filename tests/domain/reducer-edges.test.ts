@@ -16,22 +16,38 @@ describe('lobby transitions', () => {
   it('seats joining players and rejects a full room', () => {
     let s = lobby();
     for (const id of ['b', 'c', 'd']) {
-      s = applyCommand(s, cmd({ type: 'JOIN_ROOM', playerId: id, displayName: id }), makeEnv()).state;
+      s = applyCommand(
+        s,
+        cmd({ type: 'JOIN_ROOM', playerId: id, displayName: id }),
+        makeEnv(),
+      ).state;
     }
     expect(s.playerOrder).toHaveLength(4);
-    const full = applyCommand(s, cmd({ type: 'JOIN_ROOM', playerId: 'e', displayName: 'e' }), makeEnv());
+    const full = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'e', displayName: 'e' }),
+      makeEnv(),
+    );
     expect(full.rejection).toBe('ROOM_FULL');
   });
 
   it('treats a re-seat of the same player as idempotent', () => {
     let s = lobby();
-    s = applyCommand(s, cmd({ type: 'JOIN_ROOM', playerId: 'host', displayName: 'Host' }), makeEnv()).state;
+    s = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'host', displayName: 'Host' }),
+      makeEnv(),
+    ).state;
     expect(s.playerOrder).toEqual(['host']);
   });
 
   it('reassigns the host when the host leaves the lobby', () => {
     let s = lobby();
-    s = applyCommand(s, cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'b' }), makeEnv()).state;
+    s = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'b' }),
+      makeEnv(),
+    ).state;
     s = applyCommand(s, cmd({ type: 'LEAVE_ROOM', playerId: 'host' }), makeEnv()).state;
     expect(s.hostId).toBe('b');
     expect(s.playerOrder).toEqual(['b']);
@@ -39,20 +55,33 @@ describe('lobby transitions', () => {
 
   it('rejects START from a non-host and with a bad player count', () => {
     let s = lobby();
-    s = applyCommand(s, cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'b' }), makeEnv()).state;
-    expect(applyCommand(s, cmd({ type: 'START_GAME', playerId: 'b' }), makeEnv()).rejection).toBe('NOT_HOST');
+    s = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'b' }),
+      makeEnv(),
+    ).state;
+    expect(applyCommand(s, cmd({ type: 'START_GAME', playerId: 'b' }), makeEnv()).rejection).toBe(
+      'NOT_HOST',
+    );
     const solo = lobby();
-    expect(applyCommand(solo, cmd({ type: 'START_GAME', playerId: 'host' }), makeEnv()).rejection).toBe('BAD_PLAYER_COUNT');
+    expect(
+      applyCommand(solo, cmd({ type: 'START_GAME', playerId: 'host' }), makeEnv()).rejection,
+    ).toBe('BAD_PLAYER_COUNT');
   });
 
   it('rejects gameplay commands while still in the lobby', () => {
     const s = lobby();
-    expect(applyCommand(s, cmd({ type: 'ROLL', playerId: 'host' }), makeEnv()).rejection).toBe('WRONG_PHASE');
+    expect(applyCommand(s, cmd({ type: 'ROLL', playerId: 'host' }), makeEnv()).rejection).toBe(
+      'WRONG_PHASE',
+    );
   });
 
   it('rejects CREATE_ROOM and unknown commands at the reducer', () => {
     const s = lobby();
-    expect(applyCommand(s, cmd({ type: 'CREATE_ROOM', playerId: 'host', displayName: 'x' }), makeEnv()).rejection).toBe('UNKNOWN_COMMAND');
+    expect(
+      applyCommand(s, cmd({ type: 'CREATE_ROOM', playerId: 'host', displayName: 'x' }), makeEnv())
+        .rejection,
+    ).toBe('UNKNOWN_COMMAND');
   });
 
   it('leaving an unknown player is a no-op', () => {
@@ -80,7 +109,9 @@ describe('in-play edges', () => {
 
   it('rejects a resign from an unknown player', () => {
     const s = makePlayingState({ sides: ['south', 'north'] });
-    expect(applyCommand(s, cmd({ type: 'RESIGN', playerId: 'ghost' }), makeEnv()).rejection).toBe('PLAYER_NOT_FOUND');
+    expect(applyCommand(s, cmd({ type: 'RESIGN', playerId: 'ghost' }), makeEnv()).rejection).toBe(
+      'PLAYER_NOT_FOUND',
+    );
   });
 
   it('keeps a non-current resign from advancing the turn (4 players)', () => {
@@ -99,7 +130,11 @@ describe('in-play edges', () => {
 
   it('resigns a player in the lobby without ending a game', () => {
     let s = lobby();
-    s = applyCommand(s, cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'b' }), makeEnv()).state;
+    s = applyCommand(
+      s,
+      cmd({ type: 'JOIN_ROOM', playerId: 'b', displayName: 'b' }),
+      makeEnv(),
+    ).state;
     const res = applyCommand(s, cmd({ type: 'RESIGN', playerId: 'b' }), makeEnv());
     expect(res.state.players['b']!.status).toBe('resigned');
     expect(res.state.status).toBe('lobby');

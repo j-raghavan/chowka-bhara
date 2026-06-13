@@ -24,12 +24,18 @@ function storageOrNull(): Storage | null {
   }
 }
 
-export function loadIdentity(gameId: string, storage: Storage | null = storageOrNull()): RoomIdentity | null {
+export function loadIdentity(
+  gameId: string,
+  storage: Storage | null = storageOrNull(),
+): RoomIdentity | null {
   const raw = storage?.getItem(key(gameId));
   return raw ? (JSON.parse(raw) as RoomIdentity) : null;
 }
 
-export function saveIdentity(identity: RoomIdentity, storage: Storage | null = storageOrNull()): void {
+export function saveIdentity(
+  identity: RoomIdentity,
+  storage: Storage | null = storageOrNull(),
+): void {
   storage?.setItem(key(identity.gameId), JSON.stringify(identity));
 }
 

@@ -68,7 +68,11 @@ describe('BrowserTransport — cross-tab sync + persistence', () => {
     await t1.updatePresence(gameId, join.playerId, 'disconnected');
 
     const t2 = new BrowserTransport(makeEnv(), store, channel); // "after refresh"
-    const back = await t2.joinRoom({ gameId, displayName: 'alice', reclaimToken: join.reclaimToken });
+    const back = await t2.joinRoom({
+      gameId,
+      displayName: 'alice',
+      reclaimToken: join.reclaimToken,
+    });
     expect(back.playerId).toBe(join.playerId);
     expect(back.spectator).toBe(false);
     expect(t2.getState(gameId)!.players[join.playerId]!.status).toBe('connected');

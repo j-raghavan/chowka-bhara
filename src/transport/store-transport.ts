@@ -53,7 +53,11 @@ export abstract class StoreTransport implements GameTransport {
     // Reconnect (CB5-FR9, CB5-AC7): a valid token reclaims the seat.
     if (input.reclaimToken !== undefined) {
       const record = this.getToken(input.reclaimToken);
-      if (record !== undefined && record.gameId === input.gameId && state.players[record.playerId]) {
+      if (
+        record !== undefined &&
+        record.gameId === input.gameId &&
+        state.players[record.playerId]
+      ) {
         await this.updatePresence(input.gameId, record.playerId, 'connected');
         return {
           playerId: record.playerId,
@@ -64,7 +68,8 @@ export abstract class StoreTransport implements GameTransport {
       }
     }
 
-    const spectator = state.status !== 'lobby' || state.playerOrder.length >= state.config.maxPlayers;
+    const spectator =
+      state.status !== 'lobby' || state.playerOrder.length >= state.config.maxPlayers;
     if (spectator) {
       return { playerId: '', reclaimToken: '', spectator: true, state };
     }
@@ -101,7 +106,10 @@ export abstract class StoreTransport implements GameTransport {
     if (player === undefined) return;
     this.putState({
       ...state,
-      players: { ...state.players, [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() } },
+      players: {
+        ...state.players,
+        [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() },
+      },
     });
   }
 

@@ -34,20 +34,17 @@ export interface MoveCandidate {
   readonly side: PlayerSide;
 }
 
-export type GateReason =
-  | 'OVERSHOOT'
-  | 'INNER_PATH_NO_HIT'
-  | 'OWN_PAWN'
-  | 'OPP_SAFE_BLOCKED';
+export type GateReason = 'OVERSHOOT' | 'INNER_PATH_NO_HIT' | 'OWN_PAWN' | 'OPP_SAFE_BLOCKED';
 
 export type GateResult =
   | { readonly ok: true; readonly candidate: MoveCandidate; readonly wouldHitPawnId: string | null }
   | { readonly ok: false; readonly reason: GateReason };
 
-const pass = (
-  candidate: MoveCandidate,
-  wouldHitPawnId: string | null = null,
-): GateResult => ({ ok: true, candidate, wouldHitPawnId });
+const pass = (candidate: MoveCandidate, wouldHitPawnId: string | null = null): GateResult => ({
+  ok: true,
+  candidate,
+  wouldHitPawnId,
+});
 
 const drop = (reason: GateReason): GateResult => ({ ok: false, reason });
 
@@ -200,7 +197,10 @@ export function computeSkipReason(state: GameState): SkipReason {
     const result = runGates(c, ctx);
     if (result.ok) continue; // (should not happen when called on a no-move turn)
     reasons.add(result.reason);
-    if (c.type === 'enter' && (result.reason === 'OWN_PAWN' || result.reason === 'OPP_SAFE_BLOCKED')) {
+    if (
+      c.type === 'enter' &&
+      (result.reason === 'OWN_PAWN' || result.reason === 'OPP_SAFE_BLOCKED')
+    ) {
       startBlocked = true;
     }
   }

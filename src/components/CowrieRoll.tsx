@@ -9,7 +9,8 @@ export interface CowrieRollProps {
 }
 
 export function CowrieRoll({ roll, canRoll, onRoll }: CowrieRollProps) {
-  const faces = roll?.faces ?? (['closed', 'closed', 'closed', 'closed', 'closed', 'closed'] as const);
+  const faces =
+    roll?.faces ?? (['closed', 'closed', 'closed', 'closed', 'closed', 'closed'] as const);
   return (
     <div>
       <div className="cowrie-row" aria-hidden="true">
@@ -21,7 +22,12 @@ export function CowrieRoll({ roll, canRoll, onRoll }: CowrieRollProps) {
         {roll ? roll.value : '—'}
       </div>
       <div className="roll-name">{roll ? (ROLL_NAME[roll.value] ?? '') : ''}</div>
-      <button className="btn" onClick={onRoll} disabled={!canRoll} style={{ width: '100%', marginTop: '0.5rem' }}>
+      <button
+        className="btn"
+        onClick={onRoll}
+        disabled={!canRoll}
+        style={{ width: '100%', marginTop: '0.5rem' }}
+      >
         Roll cowries
       </button>
     </div>
