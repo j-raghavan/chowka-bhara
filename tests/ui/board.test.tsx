@@ -52,18 +52,14 @@ describe('Board interactivity', () => {
     expect(southHome?.textContent).toBe('×4');
   });
 
-  it('click the home square then the destination to bring a pawn out (#2)', () => {
+  it('auto-highlights an entry destination so a home pawn can come out (#2)', () => {
     const state = entryRoll();
     const onSelectMove = vi.fn();
     const { container } = render(<Board state={state} onSelectMove={onSelectMove} />);
 
-    // The home/start square is selectable (4 home pawns can enter); nothing highlighted yet.
-    const homeCell = container.querySelector('[aria-label^="start house 6,3"]')!;
-    expect(homeCell).toHaveClass('selectable');
-    expect(container.querySelector('.house.legal')).toBeNull();
-
-    fireEvent.click(homeCell); // select a home pawn
-    const dest = container.querySelector('.house.legal'); // entry destination now highlighted
+    // A movable home pawn is auto-selected so its entry destination is highlighted
+    // and clickable straight away — the board is never "stuck".
+    const dest = container.querySelector('.house.legal');
     expect(dest).not.toBeNull();
     fireEvent.click(dest!);
     expect(onSelectMove).toHaveBeenCalledTimes(1);
@@ -71,7 +67,7 @@ describe('Board interactivity', () => {
     expect(state.legalMoves.find((m) => m.id === moveId)?.type).toBe('enter');
   });
 
-  it('lets the player choose any movable on-board pawn each turn (#2)', () => {
+  it('lets the player switch to another movable pawn before moving (#2)', () => {
     let s = makePlayingState({ sides: ['south', 'north'] });
     s = withPawnAt(s, 'south-p0', 5); // [4,6]
     s = withPawnAt(s, 'south-p1', 10); // [0,5]
@@ -79,17 +75,21 @@ describe('Board interactivity', () => {
     const onSelectMove = vi.fn();
     const { container } = render(<Board state={s} onSelectMove={onSelectMove} />);
 
-    // Two movable pawns -> nothing auto-selected -> both cells are selectable.
-    expect(container.querySelector('.house.legal')).toBeNull();
-    const selectables = [...container.querySelectorAll('.house.selectable')];
-    expect(selectables).toHaveLength(2);
+    // One pawn is auto-selected (a destination is always highlighted -> never stuck);
+    // the other movable pawn is offered as a switch.
+    expect(container.querySelector('.house.legal')).not.toBeNull();
+    const autoPawn = s.legalMoves[0]!.pawnId;
+    const selectable = container.querySelector('.house.selectable');
+    expect(selectable).not.toBeNull();
 
-    // Pick the second pawn and move it (not forced to the first).
-    fireEvent.click(selectables[1]!);
+    // Switch to the other pawn and move it (the player is not forced onto the default).
+    fireEvent.click(selectable!);
     const dest = container.querySelector('.house.legal');
     expect(dest).not.toBeNull();
     fireEvent.click(dest!);
     expect(onSelectMove).toHaveBeenCalledTimes(1);
+    const moveId = onSelectMove.mock.calls[0]![0] as string;
+    expect(s.legalMoves.find((m) => m.id === moveId)?.pawnId).not.toBe(autoPawn);
   });
 
   it('renders no interactive cells when not interactive', () => {

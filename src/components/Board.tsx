@@ -69,13 +69,12 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
       movable.set(move.pawnId, list);
     }
   }
-  // Auto-select only when exactly one pawn can move; otherwise the player picks.
+  // Always default to the first movable pawn so a destination is highlighted and
+  // clickable — the board must never look "stuck" when a legal move exists. The
+  // player can still tap any other movable pawn to switch to it before moving.
+  const movableIds = [...movable.keys()];
   const effectiveSelected =
-    selected !== null && movable.has(selected)
-      ? selected
-      : movable.size === 1
-        ? [...movable.keys()][0]!
-        : null;
+    selected !== null && movable.has(selected) ? selected : (movableIds[0] ?? null);
   const selectedMoves = effectiveSelected ? (movable.get(effectiveSelected) ?? []) : [];
 
   const destByCell = new Map<string, LegalMove>();
@@ -134,7 +133,7 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                   (dest ? ' legal' : '') +
                   (dest?.wouldHitPawnId ? ' hit' : '') +
                   (previewKeys.has(key) ? ' preview' : '') +
-                  (movableHere.length > 0 && !dest ? ' selectable' : '') +
+                  (movableHere.length > 0 && !dest && !isSelectedPawnCell ? ' selectable' : '') +
                   (isSelectedPawnCell ? ' selected' : '');
 
                 const title = dest?.wouldHitPawnId
