@@ -85,3 +85,55 @@ export function facesForValue(value: RollValue): readonly CowrieFace[] {
   const open = value === 12 ? 0 : value;
   return Array.from({ length: COWRIE_COUNT }, (_unused, i) => (i < open ? 'open' : 'closed'));
 }
+
+/**
+ * Flattened roll-value distribution. Six fair shells produce a binomial spread
+ * that bunches ~77% of throws on 2/3/4 and almost never yields 1, 5, 6 or 12 —
+ * which feels repetitive ("samey"). This source instead picks the roll VALUE
+ * from an even-ish distribution so the player sees real variety, then lays out
+ * matching cowrie faces at random positions (so the shells still look thrown).
+ * 1–5 are equally common; 6 (Chowka) and 12 (Bhara) stay the rare big rolls.
+ */
+export const FLAT_ROLL_WEIGHTS: ReadonlyArray<readonly [RollValue, number]> = [
+  [1, 18],
+  [2, 18],
+  [3, 18],
+  [4, 18],
+  [5, 18],
+  [6, 7],
+  [12, 3],
+];
+
+/**
+ * Build a cowrie source with the flattened value distribution above, driven by
+ * an injected uniform `nextFloat` in [0,1) (crypto in production, seeded PRNG in
+ * tests). Pure given `nextFloat`, so the distribution is fully testable.
+ */
+export function flatValueRandomSource(nextFloat: () => number): CowrieRandomSource {
+  const total = FLAT_ROLL_WEIGHTS.reduce((sum, [, weight]) => sum + weight, 0);
+  return {
+    rollFaces(count: number): readonly CowrieFace[] {
+      // Pick a target value from the weighted distribution.
+      let r = nextFloat() * total;
+      let value: RollValue = FLAT_ROLL_WEIGHTS[0]![0];
+      for (const [v, weight] of FLAT_ROLL_WEIGHTS) {
+        if (r < weight) {
+          value = v;
+          break;
+        }
+        r -= weight;
+      }
+      // Faces: `opens` open shells (0 for Bhara/12) placed at random positions.
+      const opens = value === 12 ? 0 : Math.min(value, count);
+      const slots = Array.from({ length: count }, (_unused, i) => i);
+      for (let i = 0; i < opens; i++) {
+        const j = i + Math.floor(nextFloat() * (count - i));
+        const tmp = slots[i]!;
+        slots[i] = slots[j]!;
+        slots[j] = tmp;
+      }
+      const openSlots = new Set(slots.slice(0, opens));
+      return Array.from({ length: count }, (_unused, i) => (openSlots.has(i) ? 'open' : 'closed'));
+    },
+  };
+}
