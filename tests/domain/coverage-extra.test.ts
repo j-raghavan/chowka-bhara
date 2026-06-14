@@ -50,12 +50,6 @@ describe('invariants extra branches', () => {
 });
 
 describe('computeSkipReason extra branches', () => {
-  it('reports start-blocked when entry is blocked by a safe opponent', () => {
-    let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 1);
-    s = withPawnAt(s, 'north-p0', 12); // sits on south start [6,3] (safe)
-    expect(computeSkipReason(s)).toBe('start-blocked');
-  });
-
   it('falls through to all-targets-blocked when a candidate is actually legal', () => {
     let s = withRoll(makePlayingState(), 3);
     s = withPawnAt(s, 'south-p0', 5); // -> 8, empty, legal

@@ -29,7 +29,8 @@ the same tab and you're back in. **Spectating:** opening a link to a full or in-
 you watch without a seat.
 
 Extra seats fill anti-clockwise (South → East → North → West). A pawn enters the board only on a
-roll of 1, and you must hit an opponent before your pawns may enter the inner rings.
+roll of 1, landing on the first house just past its start/home marker, and you must hit an opponent
+before your pawns may enter the inner rings.
 
 ## Architecture
 
@@ -112,7 +113,8 @@ The same rules are surfaced in-app via the Rules panel.
 | 5 | 5 |
 | 6 | 6 — *Chowka* |
 
-- A pawn enters the board **only on a roll of 1**.
+- A pawn enters the board **only on a roll of 1**, landing on the first house just past its
+  start/home marker (the start ✕ square is a home marker and is never landed on).
 - Rolling **6 or 12**, or **hitting an opponent**, grants an extra turn.
 - **Only one pawn per house** — no stacking, no Gatti, no doubles, no paired movement.
 - Landing on an opponent on a **non-safe** house sends it home and you take the house.

@@ -196,8 +196,8 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                     }
                   >
                     {role === 'center' && <CrownGlyph />}
-                    {role === 'start' && glyphSide && (
-                      <PawnGlyph color={sideColor[glyphSide] ?? SIDE_COLORS[glyphSide]} />
+                    {role === 'start' && glyphSide && sideColor[glyphSide] && (
+                      <PawnGlyph color={sideColor[glyphSide]} />
                     )}
                     {role === 'safe' && (
                       <span className="mark-x" aria-hidden="true">
