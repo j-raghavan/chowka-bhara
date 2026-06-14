@@ -11,15 +11,18 @@ export function RulesPanel() {
           Six cowries. Open count is your move; all closed = 12 (Bhara), all open = 6 (Chowka).
         </dd>
         <dt>Entry</dt>
-        <dd>A pawn enters the board only on a roll of 1.</dd>
+        <dd>A pawn enters on a roll of 1, landing on the first house just past its home marker.</dd>
         <dt>Bonus</dt>
         <dd>Rolling 6 or 12, or hitting an opponent, grants another turn.</dd>
-        <dt>No stacking</dt>
-        <dd>Only one pawn per house. No Gatti, no doubles, no paired movement.</dd>
+        <dt>Safe houses (×)</dt>
+        <dd>
+          The 8 ×-marked squares — the 4 board corners and the 4 inner-ring corners. Pawns there
+          can't be hit, and any number of pawns may share a safe house.
+        </dd>
         <dt>Hits</dt>
         <dd>
-          Landing on an opponent on a non-safe house sends it home. Safe houses (× and starts) block
-          landing instead.
+          On a non-safe house only one pawn may stand; landing on an opponent there sends it home
+          and you take the house.
         </dd>
         <dt>Inner path</dt>
         <dd>You must hit at least one opponent before entering the inner rings.</dd>

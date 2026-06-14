@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { coordAt } from '../domain/paths';
 import { coordKey } from '../domain/board';
 import { pathTrail } from '../domain/selectors';
@@ -21,17 +21,22 @@ interface Occupant {
   readonly label: string;
 }
 
-function buildOccupants(state: GameState): Map<string, Occupant> {
-  const map = new Map<string, Occupant>();
+/** Occupants per cell. Safe houses may hold several pawns (stacking, #3). */
+function buildOccupants(state: GameState): Map<string, Occupant[]> {
+  const map = new Map<string, Occupant[]>();
   for (const pawn of Object.values(state.pawns)) {
     if (pawn.state !== 'active' || pawn.pathIndex === null) continue;
     const player = state.players[pawn.playerId];
     if (player === undefined) continue;
-    map.set(coordKey(coordAt(player.side, pawn.pathIndex)), {
+    const key = coordKey(coordAt(player.side, pawn.pathIndex));
+    const occupant: Occupant = {
       pawnId: pawn.id,
       color: player.color,
       label: player.side[0]!.toUpperCase(),
-    });
+    };
+    const list = map.get(key);
+    if (list === undefined) map.set(key, [occupant]);
+    else list.push(occupant);
   }
   return map;
 }
@@ -44,6 +49,12 @@ export interface BoardProps {
 
 export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
   const [selected, setSelected] = useState<string | null>(null);
+
+  // #2: clear the selection at the start of each turn so any movable pawn can be
+  // chosen freely (the selection must not stick to the last-moved pawn).
+  const rollId = state.currentRoll?.id ?? null;
+  useEffect(() => setSelected(null), [rollId]);
+
   const occupants = buildOccupants(state);
 
   // Color of each seated side (their chosen pawn color), fallback to the default.
@@ -51,16 +62,15 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
   for (const player of Object.values(state.players)) sideColor[player.side] = player.color;
 
   // Legal moves grouped by pawn; a pawn is "movable" if it has at least one.
-  const movesByPawn = new Map<string, LegalMove[]>();
+  const movable = new Map<string, LegalMove[]>();
   if (interactive) {
     for (const move of state.legalMoves) {
-      const list = movesByPawn.get(move.pawnId) ?? [];
+      const list = movable.get(move.pawnId) ?? [];
       list.push(move);
-      movesByPawn.set(move.pawnId, list);
+      movable.set(move.pawnId, list);
     }
   }
-  const movable = movesByPawn;
-  // Auto-select when exactly one pawn can move; otherwise honour the click.
+  // Auto-select only when exactly one pawn can move; otherwise the player picks.
   const effectiveSelected =
     selected !== null && movable.has(selected)
       ? selected
@@ -69,7 +79,6 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
         : null;
   const selectedMoves = effectiveSelected ? (movable.get(effectiveSelected) ?? []) : [];
 
-  // Destination cells for the selected pawn.
   const destByCell = new Map<string, LegalMove>();
   for (const move of selectedMoves) destByCell.set(coordKey(move.to), move);
 
@@ -98,8 +107,6 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
     Array.from({ length: 7 }, (_u, c) => [r, c] as Coord),
   );
 
-  const selectPawn = (pawnId: string): void => setSelected(pawnId);
-
   return (
     <div className="board-area">
       {SIDES.map((side) => (
@@ -121,7 +128,7 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                 style={{ background: color }}
                 aria-label={`Select home pawn to enter (${side})`}
                 aria-pressed={isSel}
-                onClick={() => selectPawn(pawn.id)}
+                onClick={() => setSelected(pawn.id)}
               />
             ) : (
               <span
@@ -142,22 +149,27 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
               {row.map((coord) => {
                 const key = coordKey(coord);
                 const role = houseRole(coord);
-                const occupant = occupants.get(key);
+                const here = occupants.get(key) ?? [];
                 const dest = destByCell.get(key);
-                const occMovable = occupant !== undefined && movable.has(occupant.pawnId);
-                const isSelectedPawnCell =
-                  occupant !== undefined && occupant.pawnId === effectiveSelected;
+                const movableHere = here.filter((o) => movable.has(o.pawnId)).map((o) => o.pawnId);
+                const isSelectedPawnCell = here.some((o) => o.pawnId === effectiveSelected);
                 const isSafeTile = role !== 'path';
                 const bg = isSafeTile ? SAFE_LIME : tileShade(coord);
                 const glyphSide = role === 'start' ? startSide(coord) : null;
+                // Show the selected pawn's color if it's on this cell, else the top one.
+                const shown = here.find((o) => o.pawnId === effectiveSelected) ?? here[0];
 
-                // A cell is interactive if it's the selected pawn's destination (apply)
-                // or it holds a movable active pawn (select).
+                // Cell is interactive if it's the selected pawn's destination (apply) or
+                // it holds movable pawn(s) (select / cycle through them).
+                const selectHere = (): void => {
+                  const i = movableHere.indexOf(effectiveSelected ?? '');
+                  setSelected(movableHere[(i + 1) % movableHere.length]!);
+                };
                 const onActivate =
                   dest && onSelectMove
                     ? () => onSelectMove(dest.id)
-                    : interactive && occMovable
-                      ? () => selectPawn(occupant!.pawnId)
+                    : interactive && movableHere.length > 0
+                      ? selectHere
                       : undefined;
 
                 const className =
@@ -165,20 +177,20 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                   (dest ? ' legal' : '') +
                   (dest?.wouldHitPawnId ? ' hit' : '') +
                   (previewKeys.has(key) ? ' preview' : '') +
-                  (occMovable && !dest ? ' selectable' : '') +
+                  (movableHere.length > 0 && !dest ? ' selectable' : '') +
                   (isSelectedPawnCell ? ' selected' : '');
 
                 const title = dest?.wouldHitPawnId
                   ? 'Hit — sends the opponent home'
-                  : isSafeTile && occupant
-                    ? 'Safe house — this pawn is protected; stacking is not allowed'
+                  : isSafeTile
+                    ? 'Safe house — pawns here are protected and may share the square'
                     : undefined;
 
                 return (
                   <div
                     key={key}
                     role="gridcell"
-                    aria-label={`${role} house ${key}${occupant ? `, occupied by ${occupant.label}` : ''}${dest ? ', legal move' : occMovable ? ', selectable pawn' : ''}`}
+                    aria-label={`${role} house ${key}${here.length ? `, ${here.length} pawn(s)` : ''}${dest ? ', legal move' : movableHere.length ? ', selectable pawn' : ''}`}
                     className={className}
                     title={title}
                     style={{ background: bg, borderColor: isSafeTile ? SAFE_LIME_DEEP : undefined }}
@@ -204,9 +216,9 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                         ×
                       </span>
                     )}
-                    {occupant && (
-                      <span className="pawn" style={{ background: occupant.color }}>
-                        {occupant.label}
+                    {shown && (
+                      <span className="pawn" style={{ background: shown.color }}>
+                        {here.length > 1 ? `×${here.length}` : shown.label}
                       </span>
                     )}
                   </div>

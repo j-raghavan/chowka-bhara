@@ -12,8 +12,8 @@ const cmd = commandFactory();
 
 function playingStateWithMoves() {
   let s = makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 });
-  s = withPawnAt(s, 'south-p0', 6);
-  s = withPawnAt(s, 'north-p0', 21);
+  s = withPawnAt(s, 'south-p0', 3);
+  s = withPawnAt(s, 'north-p0', 18);
   return applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), envForRolls([3])).state;
 }
 

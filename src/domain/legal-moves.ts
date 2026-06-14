@@ -7,7 +7,7 @@
  */
 import { ENTRY_INDEX, FINISH_INDEX, OUTER_RING_EXIT_INDEX, isSafe } from './board';
 import { coordAt } from './paths';
-import { buildOccupancy, occupantAt, type OccupancyMap } from './occupancy';
+import { buildOccupancy, occupantsAt, type OccupancyMap } from './occupancy';
 import type {
   CowrieRoll,
   GameState,
@@ -34,7 +34,7 @@ export interface MoveCandidate {
   readonly side: PlayerSide;
 }
 
-export type GateReason = 'OVERSHOOT' | 'INNER_PATH_NO_HIT' | 'OWN_PAWN' | 'OPP_SAFE_BLOCKED';
+export type GateReason = 'OVERSHOOT' | 'INNER_PATH_NO_HIT' | 'OWN_PAWN';
 
 export type GateResult =
   | { readonly ok: true; readonly candidate: MoveCandidate; readonly wouldHitPawnId: string | null }
@@ -110,22 +110,25 @@ export function innerPathGate(c: MoveCandidate, ctx: MoveContext): GateResult {
   return pass(c);
 }
 
-/** G-3: resolve destination occupancy (CB3-FR9/FR10/FR11). */
+/**
+ * G-3: resolve destination occupancy (CB3-FR9/FR10/FR11, #3 safe-house stacking).
+ * Safe houses are always enterable — any number of pawns may share them and no
+ * hit occurs. On a non-safe house: own pawn blocks; an opponent is hit.
+ */
 export function destinationRule(c: MoveCandidate, ctx: MoveContext): GateResult {
   const coord = coordAt(c.side, c.toIndex);
-  const occupant = occupantAt(ctx.occ, coord);
-  if (occupant === undefined) return pass(c);
-  if (occupant.playerId === ctx.player.id) return drop('OWN_PAWN');
-  // opponent
-  if (isSafe(coord)) return drop('OPP_SAFE_BLOCKED');
-  return pass(c, occupant.pawnId);
+  if (isSafe(coord)) return pass(c); // safe: stack with anyone, never a hit or block
+  const occupants = occupantsAt(ctx.occ, coord);
+  if (occupants.length === 0) return pass(c);
+  if (occupants.some((o) => o.playerId === ctx.player.id)) return drop('OWN_PAWN');
+  // A non-safe house holds at most one pawn, so this is the lone opponent → hit.
+  return pass(c, occupants[0]!.pawnId);
 }
 
 const REASON_TO_SKIP: Readonly<Record<GateReason, SkipReason>> = {
   OVERSHOOT: 'would-overshoot',
   INNER_PATH_NO_HIT: 'inner-path-locked',
   OWN_PAWN: 'all-targets-blocked',
-  OPP_SAFE_BLOCKED: 'all-targets-blocked',
 };
 
 const GATES: ReadonlyArray<(c: MoveCandidate, ctx: MoveContext) => GateResult> = [

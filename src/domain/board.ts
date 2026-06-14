@@ -14,13 +14,22 @@ export const START_HOUSES: Readonly<Record<PlayerSide, Coord>> = {
   west: [3, 0],
 };
 
-/** The four start houses plus the center. */
+/**
+ * Safe houses (the ✕-marked squares): the 4 board corners plus the 4 corners of
+ * the inner 5×5 ring. On a safe house a pawn cannot be hit and any number of
+ * pawns (of any players) may share it. The set is rotation-invariant, so it is
+ * the same physical squares from every player's perspective.
+ * (Start markers and the center crown are NOT in this set.)
+ */
 export const SAFE_HOUSES: readonly Coord[] = [
-  [6, 3],
-  [3, 6],
-  [0, 3],
-  [3, 0],
-  [3, 3],
+  [0, 0],
+  [0, 6],
+  [6, 0],
+  [6, 6], // outer corners
+  [1, 1],
+  [1, 5],
+  [5, 1],
+  [5, 5], // inner-ring corners
 ];
 
 // Path-index landmarks (L-CB7/L-CB9).

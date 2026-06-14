@@ -97,22 +97,23 @@ describe('destinationRule gate (G-3, CB3-FR9/FR10/FR11)', () => {
   });
 
   it('hits an opponent on a non-safe house (CB3-AC4)', () => {
-    // south idx 9 = [0,6]; north idx 21 also = [0,6] (non-safe corner)
+    // [3,6] (east start marker) is non-safe; south idx6 and north idx18 both resolve there.
     let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 3);
-    s = withPawnAt(s, 'south-p0', 6); // -> toIndex 9
-    s = withPawnAt(s, 'north-p0', 21); // sits on [0,6]
-    const r = destinationRule(cand({ pawnId: 'south-p0', fromIndex: 6, toIndex: 9 }), ctxFor(s));
+    s = withPawnAt(s, 'south-p0', 3); // -> toIndex 6 = [3,6]
+    s = withPawnAt(s, 'north-p0', 18); // sits on [3,6]
+    const r = destinationRule(cand({ pawnId: 'south-p0', fromIndex: 3, toIndex: 6 }), ctxFor(s));
     expect(r.ok).toBe(true);
     expect(r.ok && r.wouldHitPawnId).toBe('north-p0');
   });
 
-  it('drops an opponent on a safe house (CB3-AC5)', () => {
-    // [3,6] (east start) is safe; a north pawn sits there (north index 18).
+  it('allows landing on a safe house shared with an opponent — no hit (#3)', () => {
+    // [0,6] is a safe corner; south idx9 and north idx21 both resolve there.
     let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 3);
-    s = withPawnAt(s, 'south-p0', 3); // -> index 6 = [3,6]
-    s = withPawnAt(s, 'north-p0', 18); // also resolves to [3,6]
-    const r = destinationRule(cand({ pawnId: 'south-p0', fromIndex: 3, toIndex: 6 }), ctxFor(s));
-    expect(r.ok === false && r.reason).toBe('OPP_SAFE_BLOCKED');
+    s = withPawnAt(s, 'south-p0', 6); // -> toIndex 9 = [0,6]
+    s = withPawnAt(s, 'north-p0', 21); // sits on [0,6]
+    const r = destinationRule(cand({ pawnId: 'south-p0', fromIndex: 6, toIndex: 9 }), ctxFor(s));
+    expect(r.ok).toBe(true);
+    expect(r.ok && r.wouldHitPawnId).toBeNull();
   });
 });
 
@@ -123,12 +124,12 @@ describe('generateLegalMoves (end to end)', () => {
 
   it('marks a hit move with wouldHitPawnId', () => {
     let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 3);
-    s = withPawnAt(s, 'south-p0', 6);
-    s = withPawnAt(s, 'north-p0', 21);
+    s = withPawnAt(s, 'south-p0', 3); // -> [3,6], non-safe
+    s = withPawnAt(s, 'north-p0', 18); // sits on [3,6]
     const moves = generateLegalMoves(s);
     const hit = moves.find((m) => m.pawnId === 'south-p0');
     expect(hit?.wouldHitPawnId).toBe('north-p0');
-    expect(hit?.to).toEqual([0, 6]);
+    expect(hit?.to).toEqual([3, 6]);
   });
 
   it('marks an exact finish with wouldFinish (CB3-AC6)', () => {

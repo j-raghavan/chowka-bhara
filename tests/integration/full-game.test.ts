@@ -9,14 +9,14 @@ const cmd = commandFactory();
 
 describe('full traversal to a real winner via the reducer (no near-finish seeding)', () => {
   it('drives one pawn outer ring -> hit -> across the gate -> inner rings -> exact finish', () => {
-    // South starts mid outer-ring (idx 6); North is a hittable victim parked on [0,6] (south idx 9).
+    // South starts at idx 3; North is a hittable victim on the non-safe [3,6] (south idx 6).
     let s = makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 });
-    s = withPawnAt(s, 'south-p0', 6);
-    s = withPawnAt(s, 'north-p0', 21); // resolves to [0,6], same cell as south idx 9
+    s = withPawnAt(s, 'south-p0', 3);
+    s = withPawnAt(s, 'north-p0', 18); // resolves to [3,6], same cell as south idx 6
 
-    // 3 lands the hit (enables inner path); six 6s keep the bonus turn while crossing
-    // the outer->middle->inner ring transitions; final 3 lands exactly on center (48).
-    const rolls: RollValue[] = [3, 6, 6, 6, 6, 6, 6, 3];
+    // 3 lands the hit (enables inner path); seven 6s keep the bonus turn while crossing
+    // the outer->middle->inner ring transitions and landing exactly on center (3->6->...->48).
+    const rolls: RollValue[] = [3, 6, 6, 6, 6, 6, 6, 6];
     const env = envForRolls(rolls);
 
     const crossedGate: number[] = [];
