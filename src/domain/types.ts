@@ -69,7 +69,11 @@ export interface GameConfig {
   readonly requireHitBeforeInnerPath: boolean;
   readonly exactRollToFinish: boolean;
 
+  /** No stacking on ORDINARY houses: an own pawn blocks, an opponent is hit. */
   readonly allowStacking: false;
+  /** Safe houses (the ✕ squares) are the exception: any number of pawns may
+   *  share one and no hit occurs (#3). This is what the engine enforces. */
+  readonly allowSafeHouseStacking: true;
   readonly allowGatti: false;
   readonly hitOpponentOnLanding: true;
   readonly hitGrantsBonusTurn: true;

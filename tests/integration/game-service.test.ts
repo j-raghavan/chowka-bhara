@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { FakeTransport } from '../../src/transport/fake-transport';
 import { GameService } from '../../src/app/services/game-service';
-import type { GameState, PlayerSide } from '../../src/domain/types';
+import type { GameCommand, GameState, PlayerSide } from '../../src/domain/types';
+import type { CommandResult, GameTransport } from '../../src/transport/game-transport';
 import { envForRolls, makeEnv } from '../helpers/env';
 import { makePlayingState, withHasHit, withPawnAt } from '../helpers/state';
 import { PAWN_PALETTE } from '../../src/domain/config';
@@ -143,5 +144,81 @@ describe('reconnect through the service (CB5-AC7)', () => {
     await service.joinRoom(created.gameId, 'p2');
     expect(revisions.length).toBeGreaterThanOrEqual(2);
     unsub();
+  });
+});
+
+/**
+ * A minimal stub transport for driving submit's optimistic-concurrency retry,
+ * which can't be reproduced with FakeTransport (its CAS body is synchronous, so
+ * a command never observes a stale revision under test).
+ */
+function makeStubTransport(over: Partial<GameTransport>): GameTransport {
+  const fail = () => Promise.reject(new Error('unused in this test'));
+  return {
+    createRoom: fail,
+    joinRoom: fail,
+    subscribeRoom: () => () => {},
+    transactCommand: () => Promise.resolve({ accepted: true, revision: 1 }),
+    updatePresence: () => Promise.resolve(),
+    getState: () => undefined,
+    ...over,
+  };
+}
+
+describe('submit retries on a stale revision (optimistic concurrency)', () => {
+  const base = makePlayingState({ sides: ['south', 'north'] });
+
+  it('rebuilds against the latest revision and succeeds after one stale write', async () => {
+    let revision = 5;
+    const attempts: number[] = [];
+    const stub = makeStubTransport({
+      getState: () => ({ ...base, revision }),
+      transactCommand: (c: GameCommand): Promise<CommandResult> => {
+        attempts.push(c.expectedRevision);
+        if (attempts.length === 1) {
+          revision = 6; // a concurrent writer (e.g. presence) advanced the room
+          return Promise.resolve({ accepted: false, revision, rejection: 'STALE_REVISION' });
+        }
+        return Promise.resolve({ accepted: true, revision: revision + 1 });
+      },
+    });
+    const res = await new GameService(stub, makeEnv()).roll(base.gameId, 'south');
+    expect(res.accepted).toBe(true);
+    expect(attempts).toEqual([5, 6]); // stale at rev 5, retried against fresh rev 6
+  });
+
+  it('gives up after repeated stale writes, returning the last rejection', async () => {
+    let revision = 0;
+    const attempts: number[] = [];
+    const stub = makeStubTransport({
+      getState: () => ({ ...base, revision }),
+      transactCommand: (c: GameCommand): Promise<CommandResult> => {
+        attempts.push(c.expectedRevision);
+        revision += 1; // always advanced by someone else -> never wins
+        return Promise.resolve({ accepted: false, revision, rejection: 'STALE_REVISION' });
+      },
+    });
+    const res = await new GameService(stub, makeEnv()).roll(base.gameId, 'south');
+    expect(res.accepted).toBe(false);
+    expect(res.rejection).toBe('STALE_REVISION');
+    expect(attempts).toHaveLength(4); // bounded by MAX_ATTEMPTS
+  });
+
+  it('does not retry a genuine (non-stale) rejection', async () => {
+    let calls = 0;
+    const stub = makeStubTransport({
+      getState: () => base,
+      transactCommand: (): Promise<CommandResult> => {
+        calls += 1;
+        return Promise.resolve({
+          accepted: false,
+          revision: base.revision,
+          rejection: 'NOT_CURRENT_PLAYER',
+        });
+      },
+    });
+    const res = await new GameService(stub, makeEnv()).roll(base.gameId, 'north');
+    expect(res.rejection).toBe('NOT_CURRENT_PLAYER');
+    expect(calls).toBe(1);
   });
 });

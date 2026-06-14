@@ -16,6 +16,12 @@ interface Occupant {
  * Occupants per cell. Home pawns sit on their side's home/start square
  * (index 0); active pawns on their resolved cell. Safe houses (and the home
  * square) may hold several pawns (stacking).
+ *
+ * This is a display-only projection and intentionally separate from the domain's
+ * `buildOccupancy` (which tracks ONLY active pawns, for the rules engine). The
+ * board additionally paints not-yet-entered (home) pawns on the start marker and
+ * needs each player's chosen color, so it builds its own view. It is not a
+ * source of game truth — moves/hits are always decided by the domain.
  */
 function buildOccupants(state: GameState): Map<string, Occupant[]> {
   const map = new Map<string, Occupant[]>();

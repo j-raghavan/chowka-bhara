@@ -66,7 +66,7 @@ describe('FakeTransport — serialization (C5)', () => {
     const { gameId, state } = await t.createRoom({ hostName: 'host' });
     const round = JSON.parse(JSON.stringify(state));
     expect(round).toEqual(state);
-    expect(round.config.ruleset).toBe('7x7-six-cowrie-v1');
+    expect(round.config.ruleset).toBe('7x7-six-cowrie-v2');
     void gameId;
   });
 });

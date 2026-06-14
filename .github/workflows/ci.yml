@@ -63,3 +63,30 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Live smoke test of the Supabase (cross-device) transport: insert, CAS
+  # fresh/stale, reclaim tokens, presence CAS, and realtime delivery against the
+  # real project. Runs on pushes to the main branches (where repo secrets are
+  # available) and self-skips if the secrets are not configured, so it never
+  # blocks fork PRs. Cross-device play is otherwise only exercised by the local
+  # `npm run verify:supabase`.
+  supabase-smoke:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify live Supabase wiring (skips if secrets absent)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "Supabase secrets not configured — skipping live verification."
+            exit 0
+          fi
+          node scripts/verify-supabase.mjs

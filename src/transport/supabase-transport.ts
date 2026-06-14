@@ -164,20 +164,40 @@ export class SupabaseTransport implements GameTransport {
     return result;
   }
 
+  /**
+   * Presence is a read-modify-write of the shared state JSON, so it uses the
+   * same optimistic CAS as commands (bump the revision, UPDATE guarded on the
+   * previous revision) to avoid two tabs clobbering each other's status. On a
+   * lost race, re-read and retry a few times; presence is best-effort, so we
+   * give up quietly rather than throw if it keeps losing.
+   */
   async updatePresence(gameId: string, playerId: string, status: PlayerStatus): Promise<void> {
-    const state = await this.fetch(gameId);
-    if (state === undefined) return;
-    const player = state.players[playerId];
-    if (player === undefined) return;
-    const next: GameState = {
-      ...state,
-      players: {
-        ...state.players,
-        [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() },
-      },
-    };
-    await this.client.from('rooms').update({ state: next }).eq('game_id', gameId);
-    this.cache.set(gameId, next);
+    const MAX_ATTEMPTS = 4;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const state = await this.fetch(gameId);
+      if (state === undefined) return;
+      const player = state.players[playerId];
+      if (player === undefined) return;
+      const next: GameState = {
+        ...state,
+        revision: state.revision + 1,
+        players: {
+          ...state.players,
+          [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() },
+        },
+      };
+      const { data, error } = await this.client
+        .from('rooms')
+        .update({ state: next, revision: next.revision })
+        .eq('game_id', gameId)
+        .eq('revision', state.revision)
+        .select();
+      if (!error && data !== null && data.length > 0) {
+        this.cache.set(gameId, next);
+        return;
+      }
+      // Lost the race (someone else advanced the revision): loop to re-read.
+    }
   }
 
   private async fetch(gameId: string): Promise<GameState | undefined> {

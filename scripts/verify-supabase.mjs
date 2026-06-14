@@ -72,6 +72,26 @@ async function main() {
     else bad('CAS update (stale)', 'stale write was NOT rejected');
   }
 
+  // 3b. Presence CAS: two writers racing at the same revision — exactly one
+  // wins, the other must re-read (mirrors SupabaseTransport.updatePresence).
+  {
+    const a = await client
+      .from('rooms')
+      .update({ revision: 2, state: { gameId, presence: 'A' } })
+      .eq('game_id', gameId)
+      .eq('revision', 1)
+      .select();
+    const b = await client
+      .from('rooms')
+      .update({ revision: 2, state: { gameId, presence: 'B' } })
+      .eq('game_id', gameId)
+      .eq('revision', 1)
+      .select();
+    if (a.data?.length === 1 && b.data?.length === 0)
+      ok('presence CAS (one writer wins, the other re-reads)');
+    else bad('presence CAS', `winner rows=${a.data?.length}, loser rows=${b.data?.length}`);
+  }
+
   // 4. Reclaim tokens table.
   {
     const ins = await client

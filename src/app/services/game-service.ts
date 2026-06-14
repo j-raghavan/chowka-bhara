@@ -76,26 +76,43 @@ export class GameService {
     return this.transport.subscribeRoom(gameId, onState);
   }
 
-  private submit(
+  /**
+   * Submit a command under optimistic concurrency. If another writer advanced
+   * the revision between our read and write (STALE_REVISION) — e.g. a concurrent
+   * move or a presence update on the same room — re-read the latest revision and
+   * retry with a fresh command, up to MAX_ATTEMPTS. A fresh commandId is minted
+   * each attempt, and the reducer re-validates, so a no-longer-legal command is
+   * rejected normally rather than retried into a wrong state.
+   */
+  private async submit(
     gameId: string,
     playerId: string,
     build: (revision: number) => PartialCommand,
   ): Promise<CommandResult> {
-    const state = this.transport.getState(gameId);
-    if (state === undefined) {
-      return Promise.resolve({ accepted: false, revision: 0, rejection: 'UNKNOWN_COMMAND' });
+    const MAX_ATTEMPTS = 4;
+    let last: CommandResult = { accepted: false, revision: 0, rejection: 'UNKNOWN_COMMAND' };
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const state = this.transport.getState(gameId);
+      if (state === undefined) {
+        return { accepted: false, revision: 0, rejection: 'UNKNOWN_COMMAND' };
+      }
+      const partial = build(state.revision);
+      const command = {
+        commandId: this.env.ids.next(),
+        gameId,
+        playerId,
+        issuedAt: this.env.clock.now(),
+        ...partial,
+      };
+      // Shape matches a GameCommand variant; the reducer validates the rest.
+      last = await this.transport.transactCommand(
+        command as Parameters<GameTransport['transactCommand']>[0],
+      );
+      // On a stale write the transport has refreshed its cache to the latest
+      // revision; loop to rebuild the command against it. Any other outcome
+      // (accepted, or a real rejection) is returned as-is.
+      if (last.accepted || last.rejection !== 'STALE_REVISION') return last;
     }
-    const partial = build(state.revision);
-    const command = {
-      commandId: this.env.ids.next(),
-      gameId,
-      playerId,
-      issuedAt: this.env.clock.now(),
-      ...partial,
-    };
-    // Shape matches a GameCommand variant; the reducer validates the rest.
-    return this.transport.transactCommand(
-      command as Parameters<GameTransport['transactCommand']>[0],
-    );
+    return last;
   }
 }
