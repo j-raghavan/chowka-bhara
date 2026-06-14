@@ -147,24 +147,13 @@ button {
   color: #4a6675;
 }
 
-/* --- Board + home bases --- */
+/* --- Board (home pawns sit on each side's home/start square) --- */
 .board-area {
-  display: grid;
-  grid-template-areas:
-    '. north .'
-    'west board east'
-    '. south .';
-  grid-template-columns: minmax(40px, auto) minmax(0, 1fr) minmax(40px, auto);
-  gap: 8px;
-  width: 100%;
   /* Fill the hero column, but stay on-screen vertically (the board is square). */
-  max-width: min(100%, 82vh);
+  width: min(100%, 82vh);
   margin: 0 auto;
-  align-items: center;
-  justify-items: center;
 }
 .board-frame {
-  grid-area: board;
   background: var(--cardboard);
   padding: 12px;
   border-radius: 10px;
@@ -174,52 +163,6 @@ button {
   width: 100%;
   aspect-ratio: 1;
 }
-.home-base {
-  display: flex;
-  gap: 4px;
-  padding: 2px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.home-base.north {
-  grid-area: north;
-}
-.home-base.south {
-  grid-area: south;
-}
-.home-base.west {
-  grid-area: west;
-  flex-direction: column;
-}
-.home-base.east {
-  grid-area: east;
-  flex-direction: column;
-}
-.home-pawn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 1px 2px var(--shadow);
-  padding: 0;
-}
-.home-pawn.selectable {
-  cursor: pointer;
-  animation: pawn-beckon 1s ease-in-out infinite;
-}
-.home-pawn.selected {
-  outline: 3px solid #ffe14d;
-  outline-offset: 2px;
-}
-@keyframes pawn-beckon {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.18);
-  }
-}
 .house.selectable {
   cursor: pointer;
   box-shadow: inset 0 0 0 3px rgba(255, 225, 77, 0.7);
@@ -227,11 +170,6 @@ button {
 .house.selected .pawn {
   outline: 3px solid #ffe14d;
   outline-offset: 1px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .home-pawn.selectable {
-    animation: none !important;
-  }
 }
 .board-grid {
   display: grid;

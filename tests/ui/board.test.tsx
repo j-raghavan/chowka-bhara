@@ -45,28 +45,28 @@ describe('Board interactivity', () => {
     expect(inert).toHaveAttribute('tabindex', '-1');
   });
 
-  it('shows home pawns in each side home base', () => {
+  it('stacks home pawns on each side home/start square', () => {
     const { container } = render(<Board state={entryRoll()} interactive={false} />);
-    // 2 players x 4 home pawns.
-    expect(container.querySelectorAll('.home-pawn')).toHaveLength(8);
+    // South's home square [6,3] holds all 4 home pawns -> a ×4 stack badge.
+    const southHome = container.querySelector('[aria-label^="start house 6,3"] .pawn');
+    expect(southHome?.textContent).toBe('×4');
   });
 
-  it('select-a-home-pawn then click the start house enters that pawn (#2)', () => {
+  it('click the home square then the destination to bring a pawn out (#2)', () => {
     const state = entryRoll();
     const onSelectMove = vi.fn();
     const { container } = render(<Board state={state} onSelectMove={onSelectMove} />);
 
-    // Four selectable home pawns for south; no auto-select (multiple movable).
-    const selectable = container.querySelectorAll('.home-base.south .home-pawn.selectable');
-    expect(selectable).toHaveLength(4);
-    expect(container.querySelector('.house.legal')).toBeNull(); // nothing highlighted yet
+    // The home/start square is selectable (4 home pawns can enter); nothing highlighted yet.
+    const homeCell = container.querySelector('[aria-label^="start house 6,3"]')!;
+    expect(homeCell).toHaveClass('selectable');
+    expect(container.querySelector('.house.legal')).toBeNull();
 
-    fireEvent.click(selectable[0]!); // select a home pawn
-    const start = container.querySelector('.house.legal'); // start house now highlighted
-    expect(start).not.toBeNull();
-    fireEvent.click(start!);
+    fireEvent.click(homeCell); // select a home pawn
+    const dest = container.querySelector('.house.legal'); // entry destination now highlighted
+    expect(dest).not.toBeNull();
+    fireEvent.click(dest!);
     expect(onSelectMove).toHaveBeenCalledTimes(1);
-    // The applied move is an 'enter' move.
     const moveId = onSelectMove.mock.calls[0]![0] as string;
     expect(state.legalMoves.find((m) => m.id === moveId)?.type).toBe('enter');
   });
@@ -92,9 +92,9 @@ describe('Board interactivity', () => {
     expect(onSelectMove).toHaveBeenCalledTimes(1);
   });
 
-  it('renders no interactive cells or selectable pawns when not interactive', () => {
-    const { container } = render(<Board state={oneHitMove()} interactive={false} />);
+  it('renders no interactive cells when not interactive', () => {
+    const { container } = render(<Board state={entryRoll()} interactive={false} />);
     expect(container.querySelector('.house.legal')).toBeNull();
-    expect(container.querySelector('.home-pawn.selectable')).toBeNull();
+    expect(container.querySelector('.house.selectable')).toBeNull();
   });
 });
