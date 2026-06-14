@@ -163,13 +163,37 @@ button {
   width: 100%;
   aspect-ratio: 1;
 }
+/* Another movable pawn you can tap to switch to (distinct cyan ring, vs. the
+   yellow "destination" outline). Pulses gently so it's clearly an option. */
 .house.selectable {
   cursor: pointer;
-  box-shadow: inset 0 0 0 3px rgba(255, 225, 77, 0.7);
+  box-shadow:
+    inset 0 0 0 3px #29c0d8,
+    0 0 8px rgba(41, 192, 216, 0.6);
+  animation: pick-pulse 1.4s ease-in-out infinite;
 }
+@keyframes pick-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 3px #29c0d8,
+      0 0 4px rgba(41, 192, 216, 0.4);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 3px #29c0d8,
+      0 0 12px rgba(41, 192, 216, 0.85);
+  }
+}
+/* The currently-selected pawn (whose destination is highlighted). */
 .house.selected .pawn {
   outline: 3px solid #ffe14d;
   outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .house.selectable {
+    animation: none;
+  }
 }
 .board-grid {
   display: grid;
