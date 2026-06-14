@@ -11,7 +11,10 @@ export function RulesPanel() {
           Six cowries. Open count is your move; all closed = 12 (Bhara), all open = 6 (Chowka).
         </dd>
         <dt>Entry</dt>
-        <dd>A pawn enters on a roll of 1, landing on the first house just past its home marker.</dd>
+        <dd>
+          Your first pawn comes out only on a roll of 1. Once a pawn is on the board, any pawn can
+          come out on any roll (moving that many houses from home).
+        </dd>
         <dt>Bonus</dt>
         <dd>Rolling 6 or 12, or hitting an opponent, grants another turn.</dd>
         <dt>Safe houses (×)</dt>

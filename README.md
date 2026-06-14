@@ -28,9 +28,9 @@ Chowka Bhara Online is **online and room-based** — there's no single-device pa
 the same tab and you're back in. **Spectating:** opening a link to a full or in-progress room lets
 you watch without a seat.
 
-Extra seats fill anti-clockwise (South → East → North → West). A pawn enters the board only on a
-roll of 1, landing on the first house just past its start/home marker, and you must hit an opponent
-before your pawns may enter the inner rings.
+Extra seats fill anti-clockwise (South → East → North → West). Your first pawn comes out on a roll
+of 1; after that, any pawn can come out on any roll. You must hit an opponent before your pawns may
+enter the inner rings.
 
 ## Architecture
 
@@ -113,8 +113,9 @@ The same rules are surfaced in-app via the Rules panel.
 | 5 | 5 |
 | 6 | 6 — *Chowka* |
 
-- A pawn enters the board **only on a roll of 1**, landing on the first house just past its
-  start/home marker (the start ✕ square is a home marker and is never landed on).
+- Your **first** pawn comes out only on a roll of **1** (landing on the first house past the home
+  marker). **Once you have a pawn on the board, the rest can come out on any roll** — moving that
+  many houses from home — so each turn you may advance an on-board pawn *or* bring another one out.
 - Rolling **6 or 12**, or **hitting an opponent**, grants an extra turn.
 - **Safe houses** are the 8 ✕-marked squares: the 4 board corners and the 4 corners of the inner
   ring. On a safe house a pawn **cannot be hit**, and **any number of pawns (of any players) may
