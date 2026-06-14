@@ -9,42 +9,71 @@ import { makePlayingState, withPawnAt } from '../helpers/state';
 const cmd = commandFactory();
 
 /** A state where south has exactly one legal move: a hit on [0,6]. */
-function stateWithOneHitMove() {
+function oneHitMove() {
   let s = makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 });
   s = withPawnAt(s, 'south-p0', 6);
-  s = withPawnAt(s, 'north-p0', 21); // [0,6]
-  const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), envForRolls([3]));
-  return rolled.state;
+  s = withPawnAt(s, 'north-p0', 21); // resolves to [0,6]
+  return applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), envForRolls([3])).state;
 }
 
-describe('Board interactivity (CB6-FR5, CB6-AC1)', () => {
-  it('makes only legal cells interactive and keyboard-activatable', () => {
-    const state = stateWithOneHitMove();
+/** A state where south just rolled a 1 with all pawns home (4 entry moves). */
+function entryRoll() {
+  const s = makePlayingState({ sides: ['south', 'north'] });
+  return applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), envForRolls([1])).state;
+}
+
+describe('Board interactivity', () => {
+  it('auto-selects the only movable pawn and activates its destination', () => {
+    const state = oneHitMove();
     const onSelectMove = vi.fn();
     const { container } = render(<Board state={state} onSelectMove={onSelectMove} />);
 
-    const legalCell = container.querySelector('.house.legal');
-    expect(legalCell).not.toBeNull();
-    expect(legalCell).toHaveClass('hit'); // it is a hit move
-    expect(legalCell).toHaveAttribute('tabindex', '0');
+    const dest = container.querySelector('.house.legal');
+    expect(dest).not.toBeNull();
+    expect(dest).toHaveClass('hit');
+    expect(dest).toHaveAttribute('tabindex', '0');
 
-    // A non-legal cell is structurally inert.
-    const cells = Array.from(container.querySelectorAll('.house'));
-    const illegal = cells.find((c) => !c.classList.contains('legal'))!;
-    expect(illegal).toHaveAttribute('tabindex', '-1');
-
-    // Enter activates the legal move with the reducer's move id.
-    fireEvent.keyDown(legalCell!, { key: 'Enter' });
+    fireEvent.keyDown(dest!, { key: 'Enter' });
     expect(onSelectMove).toHaveBeenCalledWith(state.legalMoves[0]!.id);
-
-    // Click also activates it.
-    fireEvent.click(legalCell!);
-    expect(onSelectMove).toHaveBeenCalledTimes(2);
   });
 
-  it('renders no interactive cells when not interactive', () => {
-    const state = stateWithOneHitMove();
-    const { container } = render(<Board state={state} interactive={false} />);
+  it('leaves empty, non-selectable cells non-interactive', () => {
+    const { container } = render(<Board state={oneHitMove()} />);
+    const inert = Array.from(container.querySelectorAll('.house')).find(
+      (c) => !c.classList.contains('legal') && !c.classList.contains('selectable'),
+    )!;
+    expect(inert).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('shows home pawns in each side home base', () => {
+    const { container } = render(<Board state={entryRoll()} interactive={false} />);
+    // 2 players x 4 home pawns.
+    expect(container.querySelectorAll('.home-pawn')).toHaveLength(8);
+  });
+
+  it('select-a-home-pawn then click the start house enters that pawn (#2)', () => {
+    const state = entryRoll();
+    const onSelectMove = vi.fn();
+    const { container } = render(<Board state={state} onSelectMove={onSelectMove} />);
+
+    // Four selectable home pawns for south; no auto-select (multiple movable).
+    const selectable = container.querySelectorAll('.home-base.south .home-pawn.selectable');
+    expect(selectable).toHaveLength(4);
+    expect(container.querySelector('.house.legal')).toBeNull(); // nothing highlighted yet
+
+    fireEvent.click(selectable[0]!); // select a home pawn
+    const start = container.querySelector('.house.legal'); // start house now highlighted
+    expect(start).not.toBeNull();
+    fireEvent.click(start!);
+    expect(onSelectMove).toHaveBeenCalledTimes(1);
+    // The applied move is an 'enter' move.
+    const moveId = onSelectMove.mock.calls[0]![0] as string;
+    expect(state.legalMoves.find((m) => m.id === moveId)?.type).toBe('enter');
+  });
+
+  it('renders no interactive cells or selectable pawns when not interactive', () => {
+    const { container } = render(<Board state={oneHitMove()} interactive={false} />);
     expect(container.querySelector('.house.legal')).toBeNull();
+    expect(container.querySelector('.home-pawn.selectable')).toBeNull();
   });
 });
