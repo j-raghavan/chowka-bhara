@@ -52,7 +52,7 @@ describe('coordForPawn', () => {
     const s = makePlayingState();
     expect(coordForPawn(s, 'south-p0')).toBeNull(); // home
     expect(coordForPawn(s, 'nope')).toBeNull();
-    const fin = withPawnAt(s, 'south-p1', 48, 'finished');
+    const fin = withPawnAt(s, 'south-p1', 47, 'finished');
     expect(coordForPawn(fin, 'south-p1')).toBeNull();
   });
 });
@@ -68,12 +68,12 @@ describe('pathTrail', () => {
     ]);
   });
 
-  it('handles the ring-transition jump and the diagonal hop to center', () => {
-    const trail = pathTrail('south', 47, 48);
+  it('enters the center with a straight step up from [4,3]', () => {
+    const trail = pathTrail('south', 46, 47);
     expect(trail).toEqual([
-      [4, 2],
+      [4, 3],
       [3, 3],
-    ]); // index 47 -> 48 is a diagonal, non-adjacent hop
+    ]); // index 46 -> 47 is a straight, adjacent step into the crown
   });
 
   it('returns empty when toIndex precedes fromIndex', () => {

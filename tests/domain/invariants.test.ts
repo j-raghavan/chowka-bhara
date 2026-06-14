@@ -28,7 +28,7 @@ describe('assertInvariants (L-CB5)', () => {
 
   it('throws when an active pawn sits on the finish index (I-CB12)', () => {
     let s = makePlayingState();
-    s = withPawnAt(s, 'south-p0', 48); // active at 48 is illegal
+    s = withPawnAt(s, 'south-p0', 47); // active on the finish house (47) is illegal
     expect(() => assertInvariants(s)).toThrow(/I-CB12/);
   });
 

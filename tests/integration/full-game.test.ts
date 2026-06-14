@@ -14,9 +14,10 @@ describe('full traversal to a real winner via the reducer (no near-finish seedin
     s = withPawnAt(s, 'south-p0', 3);
     s = withPawnAt(s, 'north-p0', 18); // resolves to [3,6], same cell as south idx 6
 
-    // 3 lands the hit (enables inner path); seven 6s keep the bonus turn while crossing
-    // the outer->middle->inner ring transitions and landing exactly on center (3->6->...->48).
-    const rolls: RollValue[] = [3, 6, 6, 6, 6, 6, 6, 6];
+    // 3 lands the hit (enables inner path); six 6s keep the bonus turn while crossing
+    // the outer->middle->inner ring transitions, then a 5 lands exactly on center
+    // (idx 3 -> 6 -> 12 -> 18 -> 24 -> 30 -> 36 -> 42 -> 47).
+    const rolls: RollValue[] = [3, 6, 6, 6, 6, 6, 6, 5];
     const env = envForRolls(rolls);
 
     const crossedGate: number[] = [];
