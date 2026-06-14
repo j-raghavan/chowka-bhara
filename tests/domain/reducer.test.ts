@@ -106,6 +106,22 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
   });
 });
 
+describe('entry lands one house past the start (home-marker variant)', () => {
+  it('enters a pawn to path index 1 on a roll of 1', () => {
+    const env = envForRolls([1]);
+    const s = makePlayingState({ sides: ['south', 'north'] });
+    const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
+    const moveId = rolled.state.legalMoves[0]!.id;
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId }),
+      env,
+    );
+    const entered = Object.values(moved.state.pawns).find((p) => p.state === 'active')!;
+    expect(entered.pathIndex).toBe(1);
+  });
+});
+
 describe('move events carry the bonus flag (L-CB11)', () => {
   it('flags grantsBonusTurn on a hit move and not on a plain move', () => {
     let s = makePlayingState({ sides: ['south', 'north'] });

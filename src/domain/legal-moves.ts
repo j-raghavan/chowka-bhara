@@ -5,7 +5,7 @@
  *
  * Order is normative:  withinBounds -> innerPathGate -> destinationRule.
  */
-import { FINISH_INDEX, OUTER_RING_EXIT_INDEX, isSafe } from './board';
+import { ENTRY_INDEX, FINISH_INDEX, OUTER_RING_EXIT_INDEX, isSafe } from './board';
 import { coordAt } from './paths';
 import { buildOccupancy, occupantAt, type OccupancyMap } from './occupancy';
 import type {
@@ -55,7 +55,8 @@ function playerPawns(state: GameState, playerId: string): Pawn[] {
 // --- Candidate generation ---------------------------------------------------
 
 /**
- * roll === entryRoll (1) -> one 'enter' candidate per home pawn (toIndex 0);
+ * roll === entryRoll (1) -> one 'enter' candidate per home pawn, landing on the
+ * first playable house (ENTRY_INDEX = 1), one step past the start/home marker;
  * any roll -> one 'move' candidate per active pawn (toIndex = pathIndex + value).
  */
 export function generateCandidates(ctx: MoveContext): readonly MoveCandidate[] {
@@ -67,7 +68,13 @@ export function generateCandidates(ctx: MoveContext): readonly MoveCandidate[] {
   if (roll.value === state.config.entryRoll) {
     for (const pawn of pawns) {
       if (pawn.state === 'home') {
-        candidates.push({ pawnId: pawn.id, type: 'enter', fromIndex: null, toIndex: 0, side });
+        candidates.push({
+          pawnId: pawn.id,
+          type: 'enter',
+          fromIndex: null,
+          toIndex: ENTRY_INDEX,
+          side,
+        });
       }
     }
   }
@@ -192,22 +199,13 @@ export function computeSkipReason(state: GameState): SkipReason {
   if (candidates.length === 0) return 'all-targets-blocked';
 
   const reasons = new Set<GateReason>();
-  let startBlocked = false;
   for (const c of candidates) {
     const result = runGates(c, ctx);
     if (result.ok) continue; // (should not happen when called on a no-move turn)
     reasons.add(result.reason);
-    if (
-      c.type === 'enter' &&
-      (result.reason === 'OWN_PAWN' || result.reason === 'OPP_SAFE_BLOCKED')
-    ) {
-      startBlocked = true;
-    }
   }
 
   if (reasons.size === 0) return 'all-targets-blocked';
   if (reasons.size > 1) return 'mixed';
-  if (startBlocked) return 'start-blocked';
-  const only = [...reasons][0]!;
-  return REASON_TO_SKIP[only];
+  return REASON_TO_SKIP[[...reasons][0]!];
 }

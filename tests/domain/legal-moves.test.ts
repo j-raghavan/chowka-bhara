@@ -32,7 +32,8 @@ describe('generateCandidates (CB3-FR3, FR7)', () => {
     const s = withRoll(makePlayingState(), 1);
     const entries = generateCandidates(ctxFor(s)).filter((c) => c.type === 'enter');
     expect(entries).toHaveLength(4);
-    expect(entries[0]).toMatchObject({ type: 'enter', fromIndex: null, toIndex: 0 });
+    // Entry lands one house past the start/home marker (ENTRY_INDEX = 1).
+    expect(entries[0]).toMatchObject({ type: 'enter', fromIndex: null, toIndex: 1 });
   });
 
   it('produces no entry candidate on roll 2', () => {
@@ -106,13 +107,11 @@ describe('destinationRule gate (G-3, CB3-FR9/FR10/FR11)', () => {
   });
 
   it('drops an opponent on a safe house (CB3-AC5)', () => {
-    // south start [6,3] is safe; north idx 12 sits on [6,3]
-    let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 1);
-    s = withPawnAt(s, 'north-p0', 12); // occupies south start [6,3]
-    const r = destinationRule(
-      cand({ pawnId: 'south-p0', type: 'enter', fromIndex: null, toIndex: 0 }),
-      ctxFor(s),
-    );
+    // [3,6] (east start) is safe; a north pawn sits there (north index 18).
+    let s = withRoll(makePlayingState({ sides: ['south', 'north'] }), 3);
+    s = withPawnAt(s, 'south-p0', 3); // -> index 6 = [3,6]
+    s = withPawnAt(s, 'north-p0', 18); // also resolves to [3,6]
+    const r = destinationRule(cand({ pawnId: 'south-p0', fromIndex: 3, toIndex: 6 }), ctxFor(s));
     expect(r.ok === false && r.reason).toBe('OPP_SAFE_BLOCKED');
   });
 });
