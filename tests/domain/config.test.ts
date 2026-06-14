@@ -3,8 +3,9 @@ import { DEFAULT_7X7_CONFIG, RULESET_ID } from '../../src/domain/config';
 import { FINISH_INDEX, OUTER_RING_EXIT_INDEX, SAFE_HOUSES } from '../../src/domain/board';
 
 describe('DEFAULT_7X7_CONFIG (CB1-AC4)', () => {
-  it('forbids stacking and Gatti', () => {
+  it('forbids stacking on ordinary houses and Gatti, but allows safe-house sharing (#3)', () => {
     expect(DEFAULT_7X7_CONFIG.allowStacking).toBe(false);
+    expect(DEFAULT_7X7_CONFIG.allowSafeHouseStacking).toBe(true);
     expect(DEFAULT_7X7_CONFIG.allowGatti).toBe(false);
   });
 

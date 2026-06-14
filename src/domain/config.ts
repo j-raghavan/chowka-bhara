@@ -42,7 +42,8 @@ export const DEFAULT_7X7_CONFIG: GameConfig = {
   requireHitBeforeInnerPath: true,
   exactRollToFinish: true,
 
-  allowStacking: false,
+  allowStacking: false, // ordinary houses: own pawn blocks, opponent is hit
+  allowSafeHouseStacking: true, // ✕ safe houses may be shared by any pawns (#3)
   allowGatti: false,
   hitOpponentOnLanding: true,
   hitGrantsBonusTurn: true,
