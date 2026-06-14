@@ -186,9 +186,10 @@ button {
   }
 }
 /* The currently-selected pawn (whose destination is highlighted). */
-.house.selected .pawn {
+.pawn.is-selected {
   outline: 3px solid #ffe14d;
   outline-offset: 1px;
+  z-index: 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .house.selectable {
@@ -257,6 +258,24 @@ button {
   box-shadow:
     0 0 0 3px gold,
     0 2px 4px var(--shadow);
+}
+/* Several pawns sharing a square (home stack, safe house) -> individual circles
+   instead of one ×N badge, so each pawn is easy to see and count. */
+.pawn-stack {
+  position: absolute;
+  inset: 8%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 6%;
+}
+.pawn.mini {
+  position: static;
+  width: 40%;
+  height: 40%;
+  flex: none;
+  font-size: 0;
 }
 
 /* --- Cowries / controls --- */
