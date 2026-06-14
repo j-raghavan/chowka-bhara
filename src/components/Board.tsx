@@ -69,13 +69,12 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
       movable.set(move.pawnId, list);
     }
   }
-  // Auto-select only when exactly one pawn can move; otherwise the player picks.
+  // Always default to the first movable pawn so a destination is highlighted and
+  // clickable — the board must never look "stuck" when a legal move exists. The
+  // player can still tap any other movable pawn to switch to it before moving.
+  const movableIds = [...movable.keys()];
   const effectiveSelected =
-    selected !== null && movable.has(selected)
-      ? selected
-      : movable.size === 1
-        ? [...movable.keys()][0]!
-        : null;
+    selected !== null && movable.has(selected) ? selected : (movableIds[0] ?? null);
   const selectedMoves = effectiveSelected ? (movable.get(effectiveSelected) ?? []) : [];
 
   const destByCell = new Map<string, LegalMove>();
@@ -113,8 +112,6 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                 const isSafeTile = role !== 'path';
                 const bg = isSafeTile ? SAFE_LIME : tileShade(coord);
                 const glyphSide = role === 'start' ? startSide(coord) : null;
-                // Show the selected pawn's color if it's on this cell, else the top one.
-                const shown = here.find((o) => o.pawnId === effectiveSelected) ?? here[0];
 
                 // Cell is interactive if it's the selected pawn's destination (apply) or
                 // it holds movable pawn(s) (select / cycle through them).
@@ -134,7 +131,7 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                   (dest ? ' legal' : '') +
                   (dest?.wouldHitPawnId ? ' hit' : '') +
                   (previewKeys.has(key) ? ' preview' : '') +
-                  (movableHere.length > 0 && !dest ? ' selectable' : '') +
+                  (movableHere.length > 0 && !dest && !isSelectedPawnCell ? ' selectable' : '') +
                   (isSelectedPawnCell ? ' selected' : '');
 
                 const title = dest?.wouldHitPawnId
@@ -173,9 +170,27 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                         ×
                       </span>
                     )}
-                    {shown && (
-                      <span className="pawn" style={{ background: shown.color }}>
-                        {here.length > 1 ? `×${here.length}` : shown.label}
+                    {here.length === 1 && (
+                      <span
+                        className={
+                          'pawn' + (here[0]!.pawnId === effectiveSelected ? ' is-selected' : '')
+                        }
+                        style={{ background: here[0]!.color }}
+                      >
+                        {here[0]!.label}
+                      </span>
+                    )}
+                    {here.length > 1 && (
+                      <span className="pawn-stack">
+                        {here.map((o) => (
+                          <span
+                            key={o.pawnId}
+                            className={
+                              'pawn mini' + (o.pawnId === effectiveSelected ? ' is-selected' : '')
+                            }
+                            style={{ background: o.color }}
+                          />
+                        ))}
                       </span>
                     )}
                   </div>
