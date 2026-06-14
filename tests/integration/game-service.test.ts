@@ -98,7 +98,7 @@ describe('full game through the service (deterministic)', () => {
     const service = new GameService(t, makeEnv());
     let seed = makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 });
     seed = withHasHit(seed, 'south');
-    seed = withPawnAt(seed, 'south-p0', 46);
+    seed = withPawnAt(seed, 'south-p0', 47);
     t.loadRoom(seed);
 
     await service.roll(seed.gameId, 'south');

@@ -6,9 +6,9 @@ import type { PlayerSide } from '../../src/domain/types';
 const SIDES: PlayerSide[] = ['south', 'east', 'north', 'west'];
 
 describe('path geometry (CB1-AC1, CB1-AC2)', () => {
-  it('every side path has length 48', () => {
+  it('every side path has length 49', () => {
     for (const side of SIDES) {
-      expect(PATHS[side]).toHaveLength(48);
+      expect(PATHS[side]).toHaveLength(49);
     }
   });
 
@@ -18,14 +18,14 @@ describe('path geometry (CB1-AC1, CB1-AC2)', () => {
     expect(PATHS.north[0]).toEqual([0, 3]);
     expect(PATHS.east[0]).toEqual([3, 6]);
     for (const side of SIDES) {
-      expect(PATHS[side][47]).toEqual([3, 3]);
+      expect(PATHS[side][48]).toEqual([3, 3]);
     }
   });
 
   it('no path contains duplicate coordinates', () => {
     for (const side of SIDES) {
       const keys = PATHS[side].map(coordKey);
-      expect(new Set(keys).size).toBe(48);
+      expect(new Set(keys).size).toBe(49);
     }
   });
 
@@ -55,28 +55,31 @@ describe('path geometry (CB1-AC1, CB1-AC2)', () => {
 
   it('documents the ring landmarks', () => {
     expect(SOUTH_PATH[23]).toEqual([6, 2]); // outer last
-    expect(SOUTH_PATH[24]).toEqual([5, 2]); // middle-ring entry (gate)
-    expect(SOUTH_PATH[39]).toEqual([4, 4]); // inner-ring entry
-    expect(SOUTH_PATH[46]).toEqual([4, 3]); // directly below center
-    expect(SOUTH_PATH[47]).toEqual([3, 3]); // center (straight step up from [4,3])
+    expect(SOUTH_PATH[24]).toEqual([5, 1]); // middle-ring entry, the ✕ corner (gate)
+    expect(SOUTH_PATH[40]).toEqual([4, 2]); // inner-ring entry
+    expect(SOUTH_PATH[47]).toEqual([4, 3]); // directly below the crown
+    expect(SOUTH_PATH[48]).toEqual([3, 3]); // center
   });
 
-  it('bypasses exactly one middle-ring house ([5,3]) for a straight center entry', () => {
-    const keys = new Set(SOUTH_PATH.map(coordKey));
-    expect(keys.has(coordKey([5, 3]))).toBe(false); // the one bypassed house
-    expect(keys.size).toBe(48); // 49 board houses minus the bypassed one
+  it('enters the inner square diagonally and the crown straight up', () => {
+    // The one diagonal hop: outer [6,2] -> middle ✕ corner [5,1].
+    expect(SOUTH_PATH[23]).toEqual([6, 2]);
+    expect(SOUTH_PATH[24]).toEqual([5, 1]);
+    // The crown is entered straight up from directly below.
+    expect(SOUTH_PATH[47]).toEqual([4, 3]);
+    expect(SOUTH_PATH[48]).toEqual([3, 3]);
   });
 });
 
 describe('coordAt', () => {
   it('resolves a side + index to a coordinate', () => {
     expect(coordAt('south', 0)).toEqual([6, 3]);
-    expect(coordAt('south', 47)).toEqual([3, 3]);
+    expect(coordAt('south', 48)).toEqual([3, 3]);
     expect(coordAt('west', 0)).toEqual([3, 0]);
   });
 
   it('throws on an out-of-range index', () => {
-    expect(() => coordAt('south', 48)).toThrow(RangeError);
+    expect(() => coordAt('south', 49)).toThrow(RangeError);
     expect(() => coordAt('south', -1)).toThrow(RangeError);
   });
 });
@@ -87,7 +90,7 @@ describe('validatePaths', () => {
   });
 
   it('rejects a path of the wrong length', () => {
-    expect(() => validatePaths({ ...PATHS, south: SOUTH_PATH.slice(0, 47) })).toThrow(/length/);
+    expect(() => validatePaths({ ...PATHS, south: SOUTH_PATH.slice(0, 48) })).toThrow(/length/);
   });
 
   it('rejects a path that does not start at the start house', () => {
@@ -96,12 +99,12 @@ describe('validatePaths', () => {
   });
 
   it('rejects a path that does not end at center', () => {
-    const bad = [...SOUTH_PATH.slice(0, 47), [0, 0]] as const;
+    const bad = [...SOUTH_PATH.slice(0, 48), [0, 0]] as const;
     expect(() => validatePaths({ ...PATHS, south: bad })).toThrow(/center/);
   });
 
   it('rejects a duplicate coordinate', () => {
-    const dup = [...SOUTH_PATH.slice(0, 46), [6, 3], [3, 3]] as const;
+    const dup = [...SOUTH_PATH.slice(0, 47), [6, 3], [3, 3]] as const;
     expect(() => validatePaths({ ...PATHS, south: dup })).toThrow(/duplicate/);
   });
 

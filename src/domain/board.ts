@@ -35,21 +35,14 @@ export const SAFE_HOUSES: readonly Coord[] = [
 // Path-index landmarks (L-CB7/L-CB9).
 // Index 0 is the player's start/home MARKER (the safe ✕ house); pawns are never
 // placed on it. A roll of 1 enters a pawn to ENTRY_INDEX (1), the first playable
-// house anticlockwise; play then continues 1 -> 2 -> ... -> 47 (center).
-//
-// The spiral tucks into the center with a STRAIGHT step (… -> [4,3] -> center),
-// matching the physical board. A straight-only route from start to center can
-// only cover an even number of houses, so the odd 49-house board forces the
-// spiral to bypass exactly one middle-ring house per side ([5,3] for South);
-// that house is still a normal travel house for the other three sides. Each
-// side's path is therefore 48 houses long (indices 0..47).
+// house anticlockwise; play then continues 1 -> 2 -> ... -> 48 (center).
 export const HOME_MARKER_INDEX = 0 as const;
 export const ENTRY_INDEX = 1 as const;
 export const OUTER_RING_LAST_INDEX = 23 as const; // last outer-ring cell [6,2]
-export const OUTER_RING_EXIT_INDEX = 24 as const; // entry to 5x5 middle ring [5,2] (gate)
+export const OUTER_RING_EXIT_INDEX = 24 as const; // diagonal entry to 5x5 ring at ✕ [5,1] (gate)
 export const MIDDLE_RING_START_INDEX = 24 as const; // alias for readability
-export const INNER_RING_START_INDEX = 39 as const; // entry to true 3x3 ring [4,4]
-export const FINISH_INDEX = 47 as const; // center [3,3]
+export const INNER_RING_START_INDEX = 40 as const; // entry to true 3x3 ring [4,2]
+export const FINISH_INDEX = 48 as const; // center [3,3]
 
 // --- Rotations (90deg clockwise on a 7x7 grid) ------------------------------
 

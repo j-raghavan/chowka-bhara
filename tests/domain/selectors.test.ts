@@ -52,7 +52,7 @@ describe('coordForPawn', () => {
     const s = makePlayingState();
     expect(coordForPawn(s, 'south-p0')).toBeNull(); // home
     expect(coordForPawn(s, 'nope')).toBeNull();
-    const fin = withPawnAt(s, 'south-p1', 47, 'finished');
+    const fin = withPawnAt(s, 'south-p1', 48, 'finished');
     expect(coordForPawn(fin, 'south-p1')).toBeNull();
   });
 });
@@ -68,12 +68,20 @@ describe('pathTrail', () => {
     ]);
   });
 
-  it('enters the center with a straight step up from [4,3]', () => {
-    const trail = pathTrail('south', 46, 47);
+  it('cuts the corner diagonally when entering the inner square', () => {
+    const trail = pathTrail('south', 23, 24);
+    expect(trail).toEqual([
+      [6, 2],
+      [5, 1],
+    ]); // index 23 -> 24 is the diagonal entry into the middle ring
+  });
+
+  it('enters the crown with a straight step from directly below', () => {
+    const trail = pathTrail('south', 47, 48);
     expect(trail).toEqual([
       [4, 3],
       [3, 3],
-    ]); // index 46 -> 47 is a straight, adjacent step into the crown
+    ]); // index 47 -> 48 is straight (adjacent) up into the crown
   });
 
   it('returns empty when toIndex precedes fromIndex', () => {

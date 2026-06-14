@@ -17,7 +17,7 @@ describe('buildOccupancy (L-CB1, I-CB18)', () => {
 
   it('excludes home and finished pawns (I-CB5, I-CB6)', () => {
     let s = makePlayingState();
-    s = withPawnAt(s, 'south-p0', 47, 'finished');
+    s = withPawnAt(s, 'south-p0', 48, 'finished');
     const occ = buildOccupancy(s);
     expect(occ.size).toBe(0);
   });
