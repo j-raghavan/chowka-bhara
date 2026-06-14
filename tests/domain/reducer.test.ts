@@ -89,8 +89,8 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
 
   it('keeps the same player after a hit on a non-bonus roll (CB4-AC6, CB3-AC4)', () => {
     let s = makePlayingState({ sides: ['south', 'north'] });
-    s = withPawnAt(s, 'south-p0', 6);
-    s = withPawnAt(s, 'north-p0', 21); // both resolve to [0,6]
+    s = withPawnAt(s, 'south-p0', 3);
+    s = withPawnAt(s, 'north-p0', 18); // both resolve to [3,6] (non-safe)
     const env = envForRolls([3]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.wouldHitPawnId === 'north-p0')!.id;
@@ -101,8 +101,29 @@ describe('turn advancement (CB4-AC4..AC6)', () => {
     );
     expect(moved.state.currentPlayerId).toBe('south'); // hit grants bonus
     expect(moved.state.pawns['north-p0']!.state).toBe('home'); // victim sent home
-    expect(moved.state.pawns['south-p0']!.pathIndex).toBe(9); // mover occupies target
+    expect(moved.state.pawns['south-p0']!.pathIndex).toBe(6); // mover occupies target
     expect(moved.state.players['south']!.hasHit).toBe(true);
+  });
+});
+
+describe('safe-house stacking (#3)', () => {
+  it('shares a safe house with an opponent without hitting (and no bonus)', () => {
+    let s = makePlayingState({ sides: ['south', 'north'] });
+    s = withPawnAt(s, 'south-p0', 6); // -> idx 9 = [0,6] (safe corner) on a roll of 3
+    s = withPawnAt(s, 'north-p0', 21); // sits on [0,6]
+    const env = envForRolls([3]);
+    const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
+    const move = rolled.state.legalMoves.find((m) => m.pawnId === 'south-p0')!;
+    expect(move.wouldHitPawnId).toBeNull();
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: move.id }),
+      env,
+    );
+    expect(moved.state.pawns['south-p0']!.pathIndex).toBe(9);
+    expect(moved.state.pawns['north-p0']!.state).toBe('active'); // not sent home
+    expect(moved.state.history.some((e) => e.type === 'HIT')).toBe(false);
+    expect(moved.state.currentPlayerId).toBe('north'); // no hit => no bonus => turn advances
   });
 });
 
@@ -125,8 +146,8 @@ describe('entry lands one house past the start (home-marker variant)', () => {
 describe('move events carry the bonus flag (L-CB11)', () => {
   it('flags grantsBonusTurn on a hit move and not on a plain move', () => {
     let s = makePlayingState({ sides: ['south', 'north'] });
-    s = withPawnAt(s, 'south-p0', 6);
-    s = withPawnAt(s, 'north-p0', 21);
+    s = withPawnAt(s, 'south-p0', 3);
+    s = withPawnAt(s, 'north-p0', 18); // both resolve to [3,6] (non-safe)
     const env = envForRolls([3]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const hitId = rolled.state.legalMoves.find((m) => m.wouldHitPawnId)!.id;

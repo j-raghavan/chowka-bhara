@@ -53,18 +53,26 @@ describe('rotations', () => {
 });
 
 describe('safe houses', () => {
-  it('includes the four start houses plus center', () => {
-    expect(SAFE_HOUSES).toHaveLength(5);
-    expect(isSafe([6, 3])).toBe(true);
-    expect(isSafe([3, 6])).toBe(true);
-    expect(isSafe([0, 3])).toBe(true);
-    expect(isSafe([3, 0])).toBe(true);
-    expect(isSafe([3, 3])).toBe(true);
+  it('includes the 4 outer corners and 4 inner-ring corners (the ✕ squares)', () => {
+    expect(SAFE_HOUSES).toHaveLength(8);
+    for (const corner of [
+      [0, 0],
+      [0, 6],
+      [6, 0],
+      [6, 6],
+      [1, 1],
+      [1, 5],
+      [5, 1],
+      [5, 5],
+    ] as const) {
+      expect(isSafe(corner)).toBe(true);
+    }
   });
 
-  it('reports non-safe houses as unsafe', () => {
-    expect(isSafe([6, 4])).toBe(false);
-    expect(isSafe([1, 1])).toBe(false);
+  it('reports start markers, center, and path cells as not safe', () => {
+    expect(isSafe([6, 3])).toBe(false); // start marker
+    expect(isSafe([3, 3])).toBe(false); // center / finish
+    expect(isSafe([6, 4])).toBe(false); // ordinary path cell
   });
 
   it('safe-house set is invariant under 90/180/270 rotation', () => {

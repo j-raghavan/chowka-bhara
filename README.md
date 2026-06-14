@@ -116,10 +116,11 @@ The same rules are surfaced in-app via the Rules panel.
 - A pawn enters the board **only on a roll of 1**, landing on the first house just past its
   start/home marker (the start ✕ square is a home marker and is never landed on).
 - Rolling **6 or 12**, or **hitting an opponent**, grants an extra turn.
-- **Only one pawn per house** — no stacking, no Gatti, no doubles, no paired movement.
-- Landing on an opponent on a **non-safe** house sends it home and you take the house.
-- A pawn on a **safe house** (the four start houses and the center) cannot be hit; because
-  stacking is forbidden, an occupied safe house **blocks** landing.
+- **Safe houses** are the 8 ✕-marked squares: the 4 board corners and the 4 corners of the inner
+  ring. On a safe house a pawn **cannot be hit**, and **any number of pawns (of any players) may
+  share it**.
+- On a **non-safe** house only one pawn may stand: landing on an opponent there sends it home and
+  you take the house; you cannot land on your own pawn.
 - You must **hit at least one opponent** before entering the inner rings (path index ≥ 24).
 - A pawn must land **exactly** on the center to finish. First to bring all pawns home **wins**.
 

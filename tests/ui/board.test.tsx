@@ -8,11 +8,11 @@ import { makePlayingState, withPawnAt } from '../helpers/state';
 
 const cmd = commandFactory();
 
-/** A state where south has exactly one legal move: a hit on [0,6]. */
+/** A state where south has exactly one legal move: a hit on the non-safe [3,6]. */
 function oneHitMove() {
   let s = makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 });
-  s = withPawnAt(s, 'south-p0', 6);
-  s = withPawnAt(s, 'north-p0', 21); // resolves to [0,6]
+  s = withPawnAt(s, 'south-p0', 3);
+  s = withPawnAt(s, 'north-p0', 18); // resolves to [3,6]
   return applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), envForRolls([3])).state;
 }
 
@@ -69,6 +69,27 @@ describe('Board interactivity', () => {
     // The applied move is an 'enter' move.
     const moveId = onSelectMove.mock.calls[0]![0] as string;
     expect(state.legalMoves.find((m) => m.id === moveId)?.type).toBe('enter');
+  });
+
+  it('lets the player choose any movable on-board pawn each turn (#2)', () => {
+    let s = makePlayingState({ sides: ['south', 'north'] });
+    s = withPawnAt(s, 'south-p0', 5); // [4,6]
+    s = withPawnAt(s, 'south-p1', 10); // [0,5]
+    s = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), envForRolls([2])).state;
+    const onSelectMove = vi.fn();
+    const { container } = render(<Board state={s} onSelectMove={onSelectMove} />);
+
+    // Two movable pawns -> nothing auto-selected -> both cells are selectable.
+    expect(container.querySelector('.house.legal')).toBeNull();
+    const selectables = [...container.querySelectorAll('.house.selectable')];
+    expect(selectables).toHaveLength(2);
+
+    // Pick the second pawn and move it (not forced to the first).
+    fireEvent.click(selectables[1]!);
+    const dest = container.querySelector('.house.legal');
+    expect(dest).not.toBeNull();
+    fireEvent.click(dest!);
+    expect(onSelectMove).toHaveBeenCalledTimes(1);
   });
 
   it('renders no interactive cells or selectable pawns when not interactive', () => {

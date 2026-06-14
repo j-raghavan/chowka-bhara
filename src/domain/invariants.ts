@@ -1,7 +1,7 @@
 /** Executable invariants (L-CB5). Called at the end of every transition in dev/test. */
-import { FINISH_INDEX } from './board';
+import { FINISH_INDEX, isSafe, keyToCoord } from './board';
 import { buildOccupancy } from './occupancy';
-import type { GameState } from './types';
+import type { CoordKey, GameState } from './types';
 
 export class InvariantError extends Error {
   constructor(
@@ -16,7 +16,6 @@ export class InvariantError extends Error {
 const VALID_ROLLS = new Set<number>([1, 2, 3, 4, 5, 6, 12]);
 
 export function assertInvariants(state: GameState): void {
-  let activeCount = 0;
   for (const pawn of Object.values(state.pawns)) {
     switch (pawn.state) {
       case 'home':
@@ -25,7 +24,6 @@ export function assertInvariants(state: GameState): void {
         }
         break;
       case 'active':
-        activeCount += 1;
         if (pawn.pathIndex === null || pawn.pathIndex < 0 || pawn.pathIndex > FINISH_INDEX) {
           throw new InvariantError('I-CB3', `active pawn ${pawn.id} has invalid pathIndex`);
         }
@@ -41,10 +39,12 @@ export function assertInvariants(state: GameState): void {
     }
   }
 
-  // I-CB4: no two active pawns share a board coordinate.
+  // I-CB4: no two active pawns share a NON-SAFE coordinate (safe houses may stack).
   const occ = buildOccupancy(state);
-  if (occ.size !== activeCount) {
-    throw new InvariantError('I-CB4', 'two active pawns occupy the same coordinate');
+  for (const [key, occupants] of occ) {
+    if (occupants.length > 1 && !isSafe(keyToCoord(key as CoordKey))) {
+      throw new InvariantError('I-CB4', 'two active pawns occupy the same non-safe coordinate');
+    }
   }
 
   // I-CB8: roll values are exactly 1..6 or 12.
