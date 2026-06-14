@@ -39,9 +39,9 @@ export const SAFE_HOUSES: readonly Coord[] = [
 export const HOME_MARKER_INDEX = 0 as const;
 export const ENTRY_INDEX = 1 as const;
 export const OUTER_RING_LAST_INDEX = 23 as const; // last outer-ring cell [6,2]
-export const OUTER_RING_EXIT_INDEX = 24 as const; // entry to 5x5 middle ring [5,2] (gate)
+export const OUTER_RING_EXIT_INDEX = 24 as const; // diagonal entry to 5x5 ring at ✕ [5,1] (gate)
 export const MIDDLE_RING_START_INDEX = 24 as const; // alias for readability
-export const INNER_RING_START_INDEX = 40 as const; // entry to true 3x3 ring [4,3]
+export const INNER_RING_START_INDEX = 40 as const; // entry to true 3x3 ring [4,2]
 export const FINISH_INDEX = 48 as const; // center [3,3]
 
 // --- Rotations (90deg clockwise on a 7x7 grid) ------------------------------

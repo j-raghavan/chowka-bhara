@@ -68,12 +68,20 @@ describe('pathTrail', () => {
     ]);
   });
 
-  it('handles the ring-transition jump and the diagonal hop to center', () => {
+  it('cuts the corner diagonally when entering the inner square', () => {
+    const trail = pathTrail('south', 23, 24);
+    expect(trail).toEqual([
+      [6, 2],
+      [5, 1],
+    ]); // index 23 -> 24 is the diagonal entry into the middle ring
+  });
+
+  it('enters the crown with a straight step from directly below', () => {
     const trail = pathTrail('south', 47, 48);
     expect(trail).toEqual([
-      [4, 2],
+      [4, 3],
       [3, 3],
-    ]); // index 47 -> 48 is a diagonal, non-adjacent hop
+    ]); // index 47 -> 48 is straight (adjacent) up into the crown
   });
 
   it('returns empty when toIndex precedes fromIndex', () => {

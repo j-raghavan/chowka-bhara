@@ -1,7 +1,13 @@
 /**
  * Canonical South path and the rotated paths for the other three sides.
- * The South path is a Hamiltonian spiral over all 49 houses:
- * perimeter (0-23) -> 5x5 ring (24-39) -> 3x3 ring (40-47) -> center (48).
+ * The South path is a Hamiltonian spiral over all 49 houses, traced to match
+ * the physical board:
+ *   perimeter (0-23) -> 5x5 ring (24-39) -> 3x3 ring (40-47) -> center (48).
+ * Two notable steps mirror the board's drawn route:
+ *   - Entry into the inner square cuts the corner diagonally from the outer
+ *     ring [6,2] into the middle-ring ✕ corner [5,1] (index 23 -> 24, the gate).
+ *   - The crown is entered with a straight step from directly below
+ *     ([4,3] -> [3,3], index 47 -> 48).
  */
 import {
   FINISH_INDEX,
@@ -45,8 +51,9 @@ export const SOUTH_PATH: readonly Coord[] = [
   [6, 1],
   [6, 2],
 
-  // Middle 5x5 ring (indices 24-39)
-  [5, 2],
+  // Middle 5x5 ring (indices 24-39). Entered diagonally from [6,2] at the ✕
+  // corner [5,1], then clockwise: up the left, across the top, down the right,
+  // and back along row 5 to [5,2].
   [5, 1],
   [4, 1],
   [3, 1],
@@ -62,18 +69,20 @@ export const SOUTH_PATH: readonly Coord[] = [
   [5, 5],
   [5, 4],
   [5, 3],
+  [5, 2],
 
-  // Inner 3x3 ring (indices 40-47)
-  [4, 3],
-  [4, 4],
-  [3, 4],
-  [2, 4],
-  [2, 3],
-  [2, 2],
-  [3, 2],
+  // Inner 3x3 ring (indices 40-47): up the left, across the top, down the
+  // right, ending directly below the crown so the final step is straight up.
   [4, 2],
+  [3, 2],
+  [2, 2],
+  [2, 3],
+  [2, 4],
+  [3, 4],
+  [4, 4],
+  [4, 3],
 
-  // Finish (index 48)
+  // Finish (index 48): straight step up into the crown from [4,3].
   [3, 3],
 ];
 

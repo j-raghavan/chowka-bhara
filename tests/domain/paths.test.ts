@@ -55,9 +55,19 @@ describe('path geometry (CB1-AC1, CB1-AC2)', () => {
 
   it('documents the ring landmarks', () => {
     expect(SOUTH_PATH[23]).toEqual([6, 2]); // outer last
-    expect(SOUTH_PATH[24]).toEqual([5, 2]); // middle-ring entry (gate)
-    expect(SOUTH_PATH[40]).toEqual([4, 3]); // inner-ring entry
+    expect(SOUTH_PATH[24]).toEqual([5, 1]); // middle-ring entry, the ✕ corner (gate)
+    expect(SOUTH_PATH[40]).toEqual([4, 2]); // inner-ring entry
+    expect(SOUTH_PATH[47]).toEqual([4, 3]); // directly below the crown
     expect(SOUTH_PATH[48]).toEqual([3, 3]); // center
+  });
+
+  it('enters the inner square diagonally and the crown straight up', () => {
+    // The one diagonal hop: outer [6,2] -> middle ✕ corner [5,1].
+    expect(SOUTH_PATH[23]).toEqual([6, 2]);
+    expect(SOUTH_PATH[24]).toEqual([5, 1]);
+    // The crown is entered straight up from directly below.
+    expect(SOUTH_PATH[47]).toEqual([4, 3]);
+    expect(SOUTH_PATH[48]).toEqual([3, 3]);
   });
 });
 
