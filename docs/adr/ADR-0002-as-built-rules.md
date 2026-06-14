@@ -84,6 +84,12 @@ is unchanged: 0 open → 12 (Bhara), 1–6 → that value (6 = Chowka); 6 and 12
 turn. Source: `flatValueRandomSource` in `src/domain/cowries.ts`. Test/replay envs remain
 fully deterministic via `seededRandomSource`.
 
+This is a gameplay change not present in spec v0.1. It is intentional. Note the **trust
+model**: rolls are generated on the **acting client** and written through the CAS transport
+(there is no server-authoritative RNG). A modified client could therefore bias its own
+rolls — acceptable for the friendly-room model, but cross-client fairness would require
+server-side roll generation/validation. Same trust boundary as the open RLS policy below.
+
 ## 3. Known v0.1 limitations (accepted, not yet addressed)
 
 - **Disconnected current player stalls the game (`#6`).** Per spec v0.1 there is no

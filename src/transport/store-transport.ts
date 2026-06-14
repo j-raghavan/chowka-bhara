@@ -104,8 +104,14 @@ export abstract class StoreTransport implements GameTransport {
     if (state === undefined) return;
     const player = state.players[playerId];
     if (player === undefined) return;
+    // Presence advances the revision, matching SupabaseTransport so the contract
+    // is uniform across adapters. No CAS guard/retry is needed here because the
+    // read-modify-write is synchronous and single-threaded (same reasoning as
+    // transactCommand); the networked Supabase adapter guards with a conditional
+    // UPDATE instead.
     this.putState({
       ...state,
+      revision: state.revision + 1,
       players: {
         ...state.players,
         [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() },

@@ -5,7 +5,11 @@
 import { FINISH_INDEX, OUTER_RING_EXIT_INDEX, SAFE_HOUSES } from './board';
 import type { GameConfig } from './types';
 
-export const RULESET_ID = '7x7-six-cowrie-v1' as const;
+// v2: the as-built rules diverge from spec v0.1 (safe-house geometry/stacking,
+// entry rule, start=marker/center=finish, diagonal inner-square entry + straight
+// crown, flattened cowrie odds). See docs/adr/ADR-0002-as-built-rules.md. The id
+// is stored per game, so older saved rooms keep whatever ruleset they began with.
+export const RULESET_ID = '7x7-six-cowrie-v2' as const;
 
 /**
  * Selectable pawn colors (single source of truth). The first four are the
