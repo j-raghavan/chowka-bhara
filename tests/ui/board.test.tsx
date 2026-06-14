@@ -45,11 +45,11 @@ describe('Board interactivity', () => {
     expect(inert).toHaveAttribute('tabindex', '-1');
   });
 
-  it('stacks home pawns on each side home/start square', () => {
+  it('stacks home pawns on each side home/start square as individual circles', () => {
     const { container } = render(<Board state={entryRoll()} interactive={false} />);
-    // South's home square [6,3] holds all 4 home pawns -> a ×4 stack badge.
-    const southHome = container.querySelector('[aria-label^="start house 6,3"] .pawn');
-    expect(southHome?.textContent).toBe('×4');
+    // South's home square [6,3] holds all 4 home pawns -> four separate tokens.
+    const pawns = container.querySelectorAll('[aria-label^="start house 6,3"] .pawn');
+    expect(pawns).toHaveLength(4);
   });
 
   it('auto-highlights an entry destination so a home pawn can come out (#2)', () => {

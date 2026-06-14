@@ -112,8 +112,6 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                 const isSafeTile = role !== 'path';
                 const bg = isSafeTile ? SAFE_LIME : tileShade(coord);
                 const glyphSide = role === 'start' ? startSide(coord) : null;
-                // Show the selected pawn's color if it's on this cell, else the top one.
-                const shown = here.find((o) => o.pawnId === effectiveSelected) ?? here[0];
 
                 // Cell is interactive if it's the selected pawn's destination (apply) or
                 // it holds movable pawn(s) (select / cycle through them).
@@ -172,9 +170,27 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                         ×
                       </span>
                     )}
-                    {shown && (
-                      <span className="pawn" style={{ background: shown.color }}>
-                        {here.length > 1 ? `×${here.length}` : shown.label}
+                    {here.length === 1 && (
+                      <span
+                        className={
+                          'pawn' + (here[0]!.pawnId === effectiveSelected ? ' is-selected' : '')
+                        }
+                        style={{ background: here[0]!.color }}
+                      >
+                        {here[0]!.label}
+                      </span>
+                    )}
+                    {here.length > 1 && (
+                      <span className="pawn-stack">
+                        {here.map((o) => (
+                          <span
+                            key={o.pawnId}
+                            className={
+                              'pawn mini' + (o.pawnId === effectiveSelected ? ' is-selected' : '')
+                            }
+                            style={{ background: o.color }}
+                          />
+                        ))}
                       </span>
                     )}
                   </div>
