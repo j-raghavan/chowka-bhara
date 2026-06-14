@@ -218,7 +218,7 @@ describe('no-legal-moves auto-resolution (CB4-FR5, L-CB3)', () => {
 describe('finish and winner (CB3-AC6, AC10)', () => {
   it('finishes a pawn on an exact center roll', () => {
     let s = withHasHit(makePlayingState(), 'south');
-    s = withPawnAt(s, 'south-p0', 47);
+    s = withPawnAt(s, 'south-p0', 46);
     const env = envForRolls([1]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.pawnId === 'south-p0')!.id;
@@ -232,7 +232,7 @@ describe('finish and winner (CB3-AC6, AC10)', () => {
 
   it("declares a winner when all of a player's pawns are finished (CB3-AC10)", () => {
     let s = withHasHit(makePlayingState({ sides: ['south', 'north'], pawnsPerPlayer: 1 }), 'south');
-    s = withPawnAt(s, 'south-p0', 47);
+    s = withPawnAt(s, 'south-p0', 46);
     const env = envForRolls([1]);
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
     const moveId = rolled.state.legalMoves.find((m) => m.pawnId === 'south-p0')!.id;

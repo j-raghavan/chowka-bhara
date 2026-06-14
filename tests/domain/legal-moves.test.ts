@@ -60,11 +60,11 @@ describe('generateCandidates (CB3-FR3, FR7)', () => {
 });
 
 describe('withinBounds gate (G-1, CB3-FR8 / AC6, AC7)', () => {
-  it('passes an exact finish (toIndex 48)', () => {
-    expect(withinBounds(cand({ toIndex: 48 })).ok).toBe(true);
+  it('passes an exact finish (toIndex 47)', () => {
+    expect(withinBounds(cand({ toIndex: 47 })).ok).toBe(true);
   });
-  it('drops an overshoot (toIndex 49)', () => {
-    const r = withinBounds(cand({ toIndex: 49 }));
+  it('drops an overshoot (toIndex 48)', () => {
+    const r = withinBounds(cand({ toIndex: 48 }));
     expect(r.ok).toBe(false);
     expect(r.ok === false && r.reason).toBe('OVERSHOOT');
   });
@@ -143,15 +143,15 @@ describe('generateLegalMoves (end to end)', () => {
 
   it('marks an exact finish with wouldFinish (CB3-AC6)', () => {
     let s = withHasHit(withRoll(makePlayingState(), 1), 'south');
-    s = withPawnAt(s, 'south-p0', 47);
+    s = withPawnAt(s, 'south-p0', 46);
     const move = generateLegalMoves(s).find((m) => m.pawnId === 'south-p0');
     expect(move?.wouldFinish).toBe(true);
-    expect(move?.toIndex).toBe(48);
+    expect(move?.toIndex).toBe(47);
   });
 
   it('omits a finish move when the roll overshoots (CB3-AC7)', () => {
     let s = withHasHit(withRoll(makePlayingState(), 2), 'south');
-    s = withPawnAt(s, 'south-p0', 47);
+    s = withPawnAt(s, 'south-p0', 46);
     expect(generateLegalMoves(s).some((m) => m.pawnId === 'south-p0')).toBe(false);
   });
 });

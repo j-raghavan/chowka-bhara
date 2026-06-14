@@ -103,6 +103,6 @@ describe('landmark constants', () => {
   it('the gate landmark is the middle-ring entry, not the inner ring (L-CB7)', () => {
     expect(OUTER_RING_EXIT_INDEX).toBe(24);
     expect(MIDDLE_RING_START_INDEX).toBe(24);
-    expect(FINISH_INDEX).toBe(48);
+    expect(FINISH_INDEX).toBe(47);
   });
 });

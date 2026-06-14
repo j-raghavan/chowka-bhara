@@ -1,7 +1,12 @@
 /**
  * Canonical South path and the rotated paths for the other three sides.
- * The South path is a Hamiltonian spiral over all 49 houses:
- * perimeter (0-23) -> 5x5 ring (24-39) -> 3x3 ring (40-47) -> center (48).
+ * The South path spirals inward and tucks into the center with a STRAIGHT step
+ * (… -> [4,3] -> center [3,3]), matching the physical board. Because a
+ * straight-only route from start to center must span an even number of houses,
+ * the spiral bypasses exactly one middle-ring house ([5,3], the square just in
+ * front of South's start) — it stays a normal travel house for the other sides.
+ * Layout: perimeter (0-23) -> 5x5 ring minus [5,3] (24-38) -> 3x3 ring (39-46)
+ * -> center (47). 48 houses total.
  */
 import {
   FINISH_INDEX,
@@ -45,7 +50,8 @@ export const SOUTH_PATH: readonly Coord[] = [
   [6, 1],
   [6, 2],
 
-  // Middle 5x5 ring (indices 24-39)
+  // Middle 5x5 ring, anti-clockwise, bypassing [5,3] (indices 24-38). The spiral
+  // turns up into the inner ring at [5,4] instead of completing row 5.
   [5, 2],
   [5, 1],
   [4, 1],
@@ -61,10 +67,9 @@ export const SOUTH_PATH: readonly Coord[] = [
   [4, 5],
   [5, 5],
   [5, 4],
-  [5, 3],
 
-  // Inner 3x3 ring (indices 40-47)
-  [4, 3],
+  // Inner 3x3 ring (indices 39-46), ending directly below the center so the
+  // final step into the crown is straight up: [4,3] -> [3,3].
   [4, 4],
   [3, 4],
   [2, 4],
@@ -72,6 +77,7 @@ export const SOUTH_PATH: readonly Coord[] = [
   [2, 2],
   [3, 2],
   [4, 2],
+  [4, 3],
 
   // Finish (index 48)
   [3, 3],
@@ -96,14 +102,14 @@ export function coordAt(side: PlayerSide, pathIndex: number): Coord {
 
 /**
  * Validate the five path invariants for every side:
- * length 49, index 0 = start house, index 48 = center, no duplicates,
- * every coordinate in bounds. Throws on the first violation.
+ * length 48 (FINISH_INDEX + 1), index 0 = start house, last index = center,
+ * no duplicates, every coordinate in bounds. Throws on the first violation.
  */
 export function validatePaths(paths: Readonly<Record<PlayerSide, readonly Coord[]>> = PATHS): void {
   for (const side of Object.keys(paths) as PlayerSide[]) {
     const path = paths[side];
     if (path.length !== FINISH_INDEX + 1) {
-      throw new Error(`path[${side}] length ${path.length} !== 49`);
+      throw new Error(`path[${side}] length ${path.length} !== ${FINISH_INDEX + 1}`);
     }
     const start = path[0];
     if (start === undefined || !coordsEqual(start, START_HOUSES[side])) {
