@@ -1,19 +1,10 @@
 import { useEffect, useState } from 'react';
 import { coordAt } from '../domain/paths';
-import { coordKey } from '../domain/board';
+import { coordKey, HOME_MARKER_INDEX } from '../domain/board';
 import { pathTrail } from '../domain/selectors';
-import {
-  houseRole,
-  SAFE_LIME,
-  SAFE_LIME_DEEP,
-  SIDE_COLORS,
-  startSide,
-  tileShade,
-} from '../ui/board-theme';
+import { houseRole, SAFE_LIME, SAFE_LIME_DEEP, startSide, tileShade } from '../ui/board-theme';
 import { CrownGlyph, PawnGlyph } from './glyphs';
-import type { Coord, GameState, LegalMove, Pawn, PlayerSide } from '../domain/types';
-
-const SIDES: PlayerSide[] = ['south', 'east', 'north', 'west'];
+import type { Coord, GameState, LegalMove, PlayerSide } from '../domain/types';
 
 interface Occupant {
   readonly pawnId: string;
@@ -21,14 +12,22 @@ interface Occupant {
   readonly label: string;
 }
 
-/** Occupants per cell. Safe houses may hold several pawns (stacking, #3). */
+/**
+ * Occupants per cell. Home pawns sit on their side's home/start square
+ * (index 0); active pawns on their resolved cell. Safe houses (and the home
+ * square) may hold several pawns (stacking).
+ */
 function buildOccupants(state: GameState): Map<string, Occupant[]> {
   const map = new Map<string, Occupant[]>();
   for (const pawn of Object.values(state.pawns)) {
-    if (pawn.state !== 'active' || pawn.pathIndex === null) continue;
     const player = state.players[pawn.playerId];
     if (player === undefined) continue;
-    const key = coordKey(coordAt(player.side, pawn.pathIndex));
+    let index: number;
+    if (pawn.state === 'active' && pawn.pathIndex !== null) index = pawn.pathIndex;
+    else if (pawn.state === 'home')
+      index = HOME_MARKER_INDEX; // the home/start square
+    else continue; // finished pawns aren't drawn on the board
+    const key = coordKey(coordAt(player.side, index));
     const occupant: Occupant = {
       pawnId: pawn.id,
       color: player.color,
@@ -94,54 +93,12 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
     }
   }
 
-  // Home pawns grouped by side (shown in each side's home base).
-  const homeBySide: Partial<Record<PlayerSide, Pawn[]>> = {};
-  for (const pawn of Object.values(state.pawns)) {
-    if (pawn.state !== 'home') continue;
-    const side = state.players[pawn.playerId]?.side;
-    if (side === undefined) continue;
-    (homeBySide[side] ??= []).push(pawn);
-  }
-
   const rows: Coord[][] = Array.from({ length: 7 }, (_unused, r) =>
     Array.from({ length: 7 }, (_u, c) => [r, c] as Coord),
   );
 
   return (
     <div className="board-area">
-      {SIDES.map((side) => (
-        <div
-          key={side}
-          className={`home-base ${side}`}
-          role="group"
-          aria-label={`${side} home base`}
-        >
-          {(homeBySide[side] ?? []).map((pawn) => {
-            const canEnter = interactive && movable.has(pawn.id);
-            const isSel = effectiveSelected === pawn.id;
-            const color = sideColor[side] ?? SIDE_COLORS[side];
-            return canEnter ? (
-              <button
-                key={pawn.id}
-                type="button"
-                className={'home-pawn selectable' + (isSel ? ' selected' : '')}
-                style={{ background: color }}
-                aria-label={`Select home pawn to enter (${side})`}
-                aria-pressed={isSel}
-                onClick={() => setSelected(pawn.id)}
-              />
-            ) : (
-              <span
-                key={pawn.id}
-                className="home-pawn"
-                style={{ background: color }}
-                aria-hidden="true"
-              />
-            );
-          })}
-        </div>
-      ))}
-
       <div className="board-frame">
         <div className="board-grid" role="grid" aria-label="Chowka Bhara board">
           {rows.map((row, r) => (
@@ -208,7 +165,7 @@ export function Board({ state, interactive = true, onSelectMove }: BoardProps) {
                     }
                   >
                     {role === 'center' && <CrownGlyph />}
-                    {role === 'start' && glyphSide && sideColor[glyphSide] && (
+                    {role === 'start' && glyphSide && sideColor[glyphSide] && here.length === 0 && (
                       <PawnGlyph color={sideColor[glyphSide]} />
                     )}
                     {role === 'safe' && (
