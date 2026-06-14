@@ -127,8 +127,8 @@ describe('safe-house stacking (#3)', () => {
   });
 });
 
-describe('entry lands one house past the start (home-marker variant)', () => {
-  it('enters a pawn to path index 1 on a roll of 1', () => {
+describe('entry rule (home marker; open on 1, then any roll)', () => {
+  it('first pawn enters to path index 1 on a roll of 1', () => {
     const env = envForRolls([1]);
     const s = makePlayingState({ sides: ['south', 'north'] });
     const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
@@ -140,6 +140,32 @@ describe('entry lands one house past the start (home-marker variant)', () => {
     );
     const entered = Object.values(moved.state.pawns).find((p) => p.state === 'active')!;
     expect(entered.pathIndex).toBe(1);
+  });
+
+  it('no pawn can enter on a non-1 roll while all are home', () => {
+    const res = roll(makePlayingState({ sides: ['south', 'north'] }), 'south', 3);
+    // all home + roll 3 => no legal move => auto-skip, turn passes
+    expect(res.state.history.some((e) => e.type === 'SKIP')).toBe(true);
+    expect(res.state.currentPlayerId).toBe('north');
+  });
+
+  it('once a pawn is out, a non-1 roll lets the player bring out another (#2)', () => {
+    let s = makePlayingState({ sides: ['south', 'north'] });
+    s = withPawnAt(s, 'south-p0', 10); // one pawn already on the board
+    const env = envForRolls([4]);
+    const rolled = applyCommand(s, cmd({ type: 'ROLL', playerId: 'south' }), env);
+    // The player may advance south-p0 (10->14) OR bring out a home pawn (enter to idx 4).
+    expect(rolled.state.legalMoves.some((m) => m.type === 'move' && m.pawnId === 'south-p0')).toBe(
+      true,
+    );
+    const entry = rolled.state.legalMoves.find((m) => m.type === 'enter')!;
+    expect(entry.toIndex).toBe(4);
+    const moved = applyCommand(
+      rolled.state,
+      cmd({ type: 'SELECT_MOVE', playerId: 'south', moveId: entry.id }),
+      env,
+    );
+    expect(moved.state.pawns[entry.pawnId]!.pathIndex).toBe(4); // a different pawn came out
   });
 });
 

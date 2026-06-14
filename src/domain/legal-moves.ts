@@ -5,7 +5,7 @@
  *
  * Order is normative:  withinBounds -> innerPathGate -> destinationRule.
  */
-import { ENTRY_INDEX, FINISH_INDEX, OUTER_RING_EXIT_INDEX, isSafe } from './board';
+import { HOME_MARKER_INDEX, FINISH_INDEX, OUTER_RING_EXIT_INDEX, isSafe } from './board';
 import { coordAt } from './paths';
 import { buildOccupancy, occupantsAt, type OccupancyMap } from './occupancy';
 import type {
@@ -55,9 +55,12 @@ function playerPawns(state: GameState, playerId: string): Pawn[] {
 // --- Candidate generation ---------------------------------------------------
 
 /**
- * roll === entryRoll (1) -> one 'enter' candidate per home pawn, landing on the
- * first playable house (ENTRY_INDEX = 1), one step past the start/home marker;
- * any roll -> one 'move' candidate per active pawn (toIndex = pathIndex + value).
+ * Entry: a home pawn moves out from the home marker (index 0) by the roll value,
+ * landing at index `rollValue`. The FIRST pawn may only come out on a roll of 1
+ * (entryRoll); once the player already has a pawn on the board, any remaining
+ * home pawn may enter on ANY roll. (So after you're "open" you can choose to
+ * advance an on-board pawn OR bring another one out.)
+ * Movement: one 'move' candidate per active pawn (toIndex = pathIndex + value).
  */
 export function generateCandidates(ctx: MoveContext): readonly MoveCandidate[] {
   const { state, player, roll } = ctx;
@@ -65,14 +68,16 @@ export function generateCandidates(ctx: MoveContext): readonly MoveCandidate[] {
   const candidates: MoveCandidate[] = [];
   const pawns = playerPawns(state, player.id);
 
-  if (roll.value === state.config.entryRoll) {
+  const hasActive = pawns.some((p) => p.state === 'active');
+  const canEnter = roll.value === state.config.entryRoll || hasActive;
+  if (canEnter) {
     for (const pawn of pawns) {
       if (pawn.state === 'home') {
         candidates.push({
           pawnId: pawn.id,
           type: 'enter',
           fromIndex: null,
-          toIndex: ENTRY_INDEX,
+          toIndex: HOME_MARKER_INDEX + roll.value, // move out from home by the roll
           side,
         });
       }

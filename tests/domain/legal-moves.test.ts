@@ -45,8 +45,17 @@ describe('generateCandidates (CB3-FR3, FR7)', () => {
     let s = withRoll(makePlayingState(), 3);
     s = withPawnAt(s, 'south-p0', 5);
     const moves = generateCandidates(ctxFor(s)).filter((c) => c.type === 'move');
+    // south-p0 moves; the 3 home pawns also enter (a pawn is already out) -> 1 move candidate.
     expect(moves).toHaveLength(1);
     expect(moves[0]).toMatchObject({ fromIndex: 5, toIndex: 8 });
+  });
+
+  it('lets home pawns enter on ANY roll once a pawn is on the board (#2)', () => {
+    let s = withRoll(makePlayingState(), 3);
+    s = withPawnAt(s, 'south-p0', 10); // a pawn is already out
+    const entries = generateCandidates(ctxFor(s)).filter((c) => c.type === 'enter');
+    expect(entries).toHaveLength(3); // p1, p2, p3 may come out
+    expect(entries[0]!.toIndex).toBe(3); // lands `rollValue` houses from the home marker
   });
 });
 
@@ -148,26 +157,28 @@ describe('generateLegalMoves (end to end)', () => {
 });
 
 describe('computeSkipReason (CB6-FR12)', () => {
+  // Use 1-2 pawns and no home pawns so entry candidates don't appear (home pawns
+  // can now enter on any roll once a pawn is out).
   it('reports inner-path-locked when the only move is gated', () => {
-    let s = withRoll(makePlayingState(), 3);
+    let s = withRoll(makePlayingState({ pawnsPerPlayer: 1 }), 3);
     s = withPawnAt(s, 'south-p0', 22); // -> 25, gated without hit
     expect(generateLegalMoves(s)).toHaveLength(0);
     expect(computeSkipReason(s)).toBe('inner-path-locked');
   });
 
   it('reports would-overshoot when the only move overshoots', () => {
-    let s = withHasHit(withRoll(makePlayingState(), 5), 'south');
+    let s = withHasHit(withRoll(makePlayingState({ pawnsPerPlayer: 1 }), 5), 'south');
     s = withPawnAt(s, 'south-p0', 46); // -> 51 overshoot
     expect(computeSkipReason(s)).toBe('would-overshoot');
   });
 
   it('reports all-targets-blocked when no candidate exists', () => {
-    const s = withRoll(makePlayingState(), 2); // no active pawns, roll != 1
+    const s = withRoll(makePlayingState(), 2); // no active pawns, roll != 1 -> no entry
     expect(computeSkipReason(s)).toBe('all-targets-blocked');
   });
 
   it('reports mixed when candidates fail for different reasons', () => {
-    let s = withRoll(makePlayingState(), 6);
+    let s = withRoll(makePlayingState({ pawnsPerPlayer: 2 }), 6);
     s = withPawnAt(s, 'south-p0', 20); // -> 26 inner-path gated
     s = withPawnAt(s, 'south-p1', 45); // -> 51 overshoot
     expect(computeSkipReason(s)).toBe('mixed');
