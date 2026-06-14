@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   COWRIE_COUNT,
+  FLAT_ROLL_WEIGHTS,
   facesForValue,
+  flatValueRandomSource,
   grantsBonus,
   openCount,
   rollCowries,
@@ -101,3 +103,65 @@ describe('facesForValue', () => {
     }
   });
 });
+
+describe('flatValueRandomSource', () => {
+  // A deterministic float sequence drives the picker so the distribution is testable.
+  const fromFloats = (values: number[]) => {
+    let i = 0;
+    return flatValueRandomSource(() => values[i++ % values.length]!);
+  };
+
+  it('maps the weighted buckets to the expected roll values', () => {
+    const total = FLAT_ROLL_WEIGHTS.reduce((s, [, w]) => s + w, 0); // 100
+    // A float that lands at the very start of each cumulative bucket selects that value.
+    let cumulative = 0;
+    for (const [value, weight] of FLAT_ROLL_WEIGHTS) {
+      const mid = (cumulative + weight / 2) / total; // a point inside this bucket
+      // first nextFloat picks the value; the rest place open faces -> use 0s so
+      // the Fisher-Yates picks are deterministic (placement doesn't affect score).
+      const src = fromFloats([mid, 0, 0, 0, 0, 0, 0]);
+      expect(scoreCowries(src.rollFaces(6))).toBe(value);
+      cumulative += weight;
+    }
+  });
+
+  it('always returns exactly six valid faces whose score is a legal roll value', () => {
+    const legal = new Set(FLAT_ROLL_WEIGHTS.map(([v]) => v));
+    const src = seededFloatSource(12345);
+    const flat = flatValueRandomSource(src);
+    for (let i = 0; i < 200; i++) {
+      const faces = flat.rollFaces(6);
+      expect(faces).toHaveLength(6);
+      expect(faces.every((f) => f === 'open' || f === 'closed')).toBe(true);
+      expect(legal.has(scoreCowries(faces))).toBe(true);
+    }
+  });
+
+  it('flattens the spread: 1 and 5 are far more common than with fair shells', () => {
+    const flat = flatValueRandomSource(seededFloatSource(7));
+    const counts = new Map<number, number>();
+    const N = 5000;
+    for (let i = 0; i < N; i++) {
+      const v = scoreCowries(flat.rollFaces(6));
+      counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    // Fair shells give P(1)=P(5)=~9%; the flat source targets ~18% each.
+    expect((counts.get(1) ?? 0) / N).toBeGreaterThan(0.13);
+    expect((counts.get(5) ?? 0) / N).toBeGreaterThan(0.13);
+    // 6 and 12 stay rarer than the 1-5 values.
+    expect((counts.get(6) ?? 0) / N).toBeLessThan(counts.get(3)! / N);
+    expect((counts.get(12) ?? 0) / N).toBeLessThan(counts.get(6)! / N + 0.05);
+  });
+});
+
+/** A small deterministic uniform-float PRNG (mulberry32) for distribution tests. */
+function seededFloatSource(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
