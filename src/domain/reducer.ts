@@ -9,6 +9,7 @@ import { assignSidesAndPawns, CANONICAL_ORDER, newSeat } from './game-setup';
 import { computeSkipReason, generateLegalMoves } from './legal-moves';
 import { appendEvents, makeEvent, rememberCommandId } from './history';
 import { assertInvariants } from './invariants';
+import { sanitizeDisplayName } from './validation';
 import type {
   ApplyResult,
   CommandRejectionCode,
@@ -95,13 +96,14 @@ function applyJoin(state: GameState, playerId: string, displayName: string, env:
   if (state.players[playerId] !== undefined) return ok(state); // idempotent re-seat
   if (state.playerOrder.length >= state.config.maxPlayers) return no('ROOM_FULL');
   const side = CANONICAL_ORDER[state.playerOrder.length]!;
-  const player = newSeat(playerId, displayName, side, env.clock.now());
+  const safeName = sanitizeDisplayName(displayName);
+  const player = newSeat(playerId, safeName, side, env.clock.now());
   const next: GameState = {
     ...state,
     players: { ...state.players, [playerId]: player },
     playerOrder: [...state.playerOrder, playerId],
   };
-  return ok(next, [makeEvent('JOIN', env, playerId, { displayName })]);
+  return ok(next, [makeEvent('JOIN', env, playerId, { displayName: safeName })]);
 }
 
 function applyLeave(state: GameState, playerId: string, env: DomainEnv): Step {

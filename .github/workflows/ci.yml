@@ -80,10 +80,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Verify live Supabase wiring (skips if secrets absent)
+      - name: Verify live Supabase wiring + hardening (skips if secrets absent)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Optional: enables the write-path CAS mechanics + realtime checks and
+          # cleanup. The script still asserts anon writes are denied without it.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
             echo "Supabase secrets not configured — skipping live verification."
