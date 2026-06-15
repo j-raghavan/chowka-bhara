@@ -132,9 +132,12 @@ async function handleJoin(uid: string, body: any): Promise<Response> {
 async function handleCommand(uid: string, body: any): Promise<Response> {
   const command = body.command as GameCommand;
   if (!command || !isValidGameId(command.gameId)) return json({ error: 'bad command' }, 400);
-  // Authority: a caller may only act as themselves.
+  // Authority: a caller may only act as themselves. This is a game-protocol
+  // rejection, NOT a transport error, so it returns HTTP 200 with a rejecting
+  // result — non-2xx would make supabase-js `functions.invoke` null `data` and
+  // set `error`, which the client would mask as a generic STALE_REVISION.
   if (command.playerId !== uid) {
-    return json({ result: { accepted: false, revision: 0, rejection: 'NOT_CURRENT_PLAYER' } }, 403);
+    return json({ result: { accepted: false, revision: 0, rejection: 'NOT_CURRENT_PLAYER' } });
   }
   const state = await fetchState(command.gameId);
   const { result, next } = runCas(state, command, env);

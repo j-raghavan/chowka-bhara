@@ -14,16 +14,18 @@
 --   * Identity: the Supabase Auth uid is the playerId, so the reclaim-token
 --     table (world-readable, now obsolete) is dropped.
 
--- 1. Remove the permissive v0.1 friendly-room policies if they exist.
+-- 1. Remove the permissive v0.1 friendly-room policy on rooms if it exists.
 drop policy if exists rooms_rw on public.rooms;
-drop policy if exists tokens_rw on public.reclaim_tokens;
 
 -- 2. Clients are read-only against rooms; writes happen only via the function.
 drop policy if exists rooms_read on public.rooms;
 create policy rooms_read on public.rooms for select using (true);
 
--- 3. Drop the obsolete, previously world-readable reclaim-token table.
-drop table if exists public.reclaim_tokens;
+-- 3. Drop the obsolete, previously world-readable reclaim-token table. CASCADE
+--    removes its policies too. We do NOT `drop policy ... on reclaim_tokens`
+--    separately: `IF EXISTS` guards the policy, not the table, so it would error
+--    on a fresh project where the table was never created.
+drop table if exists public.reclaim_tokens cascade;
 
 -- 4. Ensure room row changes are published to realtime subscribers.
 do $$

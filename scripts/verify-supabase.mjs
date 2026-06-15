@@ -156,7 +156,9 @@ async function main() {
             },
           },
         });
-        spoof.data?.result?.accepted === false
+        // Rejected either as a 200 result {accepted:false} or a non-2xx error.
+        const spoofRejected = spoof.error != null || spoof.data?.result?.accepted === false;
+        spoofRejected
           ? ok('command function: rejects acting as another player')
           : bad('command function spoof', 'a foreign playerId was NOT rejected');
         if (admin) await admin.from('rooms').delete().eq('game_id', fnRoom);
