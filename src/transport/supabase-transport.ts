@@ -1,43 +1,30 @@
 /**
  * Production transport adapter backed by Supabase (Postgres + Realtime).
  *
- * It satisfies the SAME GameTransport CAS contract (C1-C5) as FakeTransport,
- * using Postgres optimistic concurrency: the mutation is an
- *   UPDATE rooms SET state=?, revision=expected+1 WHERE game_id=? AND revision=expected
- * so exactly one writer wins at a given revision (I-CB17). The reducer runs via
- * the shared `runCas` helper before the conditional UPDATE.
+ * Authority model (see supabase/functions/command + supabase/migrations):
+ *  - WRITES go through the `command` Edge Function, which is the only writer to
+ *    `public.rooms` (service role). RLS denies all client writes; the function
+ *    runs the SAME authoritative reducer via the shared `runCas`. A modified
+ *    client can therefore no longer tamper with state by writing directly.
+ *  - IDENTITY is the anonymous-auth `uid`: this transport signs in anonymously
+ *    (session in sessionStorage, configured in public-config) so each tab is a
+ *    distinct, stable player across refreshes. The uid IS the playerId; the
+ *    function rejects commands whose playerId != uid. There is no reclaim-token
+ *    table to leak (the old seat-hijack vector).
+ *  - READS stay client-side: any client may SELECT room state (spectating) and
+ *    subscribe to realtime row changes.
  *
- * This module is platform/IO glue: it is excluded from the unit-coverage gate
- * and is verified against a live Supabase project, not in unit tests.
- *
- * Expected schema (apply via Supabase SQL editor):
- *
- *   create table rooms (
- *     game_id   text primary key,
- *     revision  integer not null default 0,
- *     state     jsonb   not null,
- *     updated_at timestamptz not null default now()
- *   );
- *   create table reclaim_tokens (
- *     token     text primary key,
- *     game_id   text not null,
- *     player_id text not null
- *   );
- *   alter table rooms enable row level security;
- *   alter table reclaim_tokens enable row level security;
- *   -- v0.1 friendly-room policy: anyone may read/write room rows. Tighten for
- *   -- adversarial play (e.g. signed player tokens, server-validated commands).
- *   create policy rooms_rw on rooms for all using (true) with check (true);
- *   create policy tokens_rw on reclaim_tokens for all using (true) with check (true);
+ * This module is platform/IO glue: excluded from the unit-coverage gate and
+ * verified against a live Supabase project (`npm run verify:supabase`), not in
+ * unit tests.
  */
 import type {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
   SupabaseClient,
 } from '@supabase/supabase-js';
-import { runCas } from './cas';
-import { createInitialState } from '../domain/game-setup';
-import type { DomainEnv, GameCommand, GameState, PlayerStatus } from '../domain/types';
+import { assertValidGameId } from '../domain/validation';
+import type { GameCommand, GameState, PlayerStatus } from '../domain/types';
 import type {
   CommandResult,
   CreateRoomInput,
@@ -57,64 +44,74 @@ interface RoomRow {
 export class SupabaseTransport implements GameTransport {
   private readonly cache = new Map<string, GameState>();
   private readonly channels = new Map<string, RealtimeChannel>();
+  private uidPromise: Promise<string> | null = null;
 
-  constructor(
-    private readonly env: DomainEnv,
-    private readonly client: SupabaseClient,
-  ) {}
+  constructor(private readonly client: SupabaseClient) {}
 
   getState(gameId: string): GameState | undefined {
     return this.cache.get(gameId);
   }
 
+  /** Ensure an anonymous auth session and return its stable uid (the playerId). */
+  private uid(): Promise<string> {
+    if (this.uidPromise === null) {
+      this.uidPromise = (async () => {
+        const { data } = await this.client.auth.getSession();
+        if (data.session?.user) return data.session.user.id;
+        const { data: signed, error } = await this.client.auth.signInAnonymously();
+        if (error || !signed.user) {
+          throw new Error(`anonymous sign-in failed: ${error?.message ?? 'no user'}`);
+        }
+        return signed.user.id;
+      })();
+    }
+    return this.uidPromise;
+  }
+
+  /** Invoke the server-authority Edge Function. Throws on transport error. */
+  private async invoke<T>(body: Record<string, unknown>): Promise<T> {
+    const { data, error } = await this.client.functions.invoke('command', { body });
+    if (error) throw new Error(`command function error: ${error.message}`);
+    return data as T;
+  }
+
   async createRoom(input: CreateRoomInput): Promise<CreateRoomResult> {
-    const gameId = input.gameId ?? this.env.ids.next();
-    const hostId = this.env.ids.next();
-    const state = createInitialState({ gameId, hostId, hostName: input.hostName }, this.env);
-    await this.client.from('rooms').insert({ game_id: gameId, revision: 0, state });
-    this.cache.set(gameId, state);
-    const reclaimToken = await this.issueToken(gameId, hostId);
-    return { gameId, playerId: hostId, reclaimToken, state };
+    if (input.gameId !== undefined) assertValidGameId(input.gameId);
+    const uid = await this.uid();
+    const res = await this.invoke<{ gameId: string; playerId: string; state: GameState }>({
+      kind: 'create',
+      gameId: input.gameId,
+      hostName: input.hostName,
+    });
+    this.cache.set(res.gameId, res.state);
+    // reclaimToken is the auth uid; reconnection is via the persisted auth session.
+    return {
+      gameId: res.gameId,
+      playerId: res.playerId || uid,
+      reclaimToken: uid,
+      state: res.state,
+    };
   }
 
   async joinRoom(input: JoinRoomInput): Promise<JoinRoomResult> {
-    let state = await this.fetch(input.gameId);
-    if (state === undefined) throw new Error(`unknown room ${input.gameId}`);
-
-    if (input.reclaimToken !== undefined) {
-      const record = await this.lookupToken(input.reclaimToken);
-      if (record !== null && record.game_id === input.gameId && state.players[record.player_id]) {
-        await this.updatePresence(input.gameId, record.player_id, 'connected');
-        state = await this.fetch(input.gameId);
-        return {
-          playerId: record.player_id,
-          reclaimToken: input.reclaimToken,
-          spectator: false,
-          state: state!,
-        };
-      }
-    }
-
-    if (state.status !== 'lobby' || state.playerOrder.length >= state.config.maxPlayers) {
-      return { playerId: '', reclaimToken: '', spectator: true, state };
-    }
-
-    const playerId = this.env.ids.next();
-    const command: GameCommand = {
-      commandId: this.env.ids.next(),
-      type: 'JOIN_ROOM',
+    assertValidGameId(input.gameId);
+    const uid = await this.uid();
+    const res = await this.invoke<{ playerId: string; spectator: boolean; state: GameState }>({
+      kind: 'join',
       gameId: input.gameId,
-      playerId,
       displayName: input.displayName,
-      expectedRevision: state.revision,
-      issuedAt: this.env.clock.now(),
+    });
+    this.cache.set(input.gameId, res.state);
+    return {
+      playerId: res.playerId,
+      reclaimToken: res.spectator ? '' : uid,
+      spectator: res.spectator,
+      state: res.state,
     };
-    await this.transactCommand(command);
-    const reclaimToken = await this.issueToken(input.gameId, playerId);
-    return { playerId, reclaimToken, spectator: false, state: this.cache.get(input.gameId)! };
   }
 
   subscribeRoom(gameId: string, onState: (state: GameState) => void): Unsubscribe {
+    assertValidGameId(gameId);
     void this.fetch(gameId).then((state) => {
       if (state !== undefined) onState(state);
     });
@@ -137,66 +134,28 @@ export class SupabaseTransport implements GameTransport {
     };
   }
 
-  /**
-   * CAS: run the reducer, then a conditional UPDATE keyed on the revision.
-   * If zero rows match (someone else advanced the revision) it is a stale write.
-   */
+  /** Forward the command to the server authority, which runs the reducer + CAS. */
   async transactCommand(command: GameCommand): Promise<CommandResult> {
-    const state = await this.fetch(command.gameId);
-    const { result, next } = runCas(state, command, this.env);
-    if (next === undefined) return result;
-
-    const { data, error } = await this.client
-      .from('rooms')
-      .update({ state: next, revision: next.revision })
-      .eq('game_id', command.gameId)
-      .eq('revision', command.expectedRevision)
-      .select();
-    if (error || data === null || data.length === 0) {
-      const current = await this.fetch(command.gameId);
-      return {
-        accepted: false,
-        revision: current?.revision ?? state?.revision ?? 0,
-        rejection: 'STALE_REVISION',
-      };
+    assertValidGameId(command.gameId);
+    await this.uid();
+    try {
+      const { result } = await this.invoke<{ result: CommandResult }>({ kind: 'command', command });
+      return result;
+    } catch {
+      const current = this.cache.get(command.gameId);
+      return { accepted: false, revision: current?.revision ?? 0, rejection: 'STALE_REVISION' };
     }
-    this.cache.set(command.gameId, next);
-    return result;
   }
 
-  /**
-   * Presence is a read-modify-write of the shared state JSON, so it uses the
-   * same optimistic CAS as commands (bump the revision, UPDATE guarded on the
-   * previous revision) to avoid two tabs clobbering each other's status. On a
-   * lost race, re-read and retry a few times; presence is best-effort, so we
-   * give up quietly rather than throw if it keeps losing.
-   */
-  async updatePresence(gameId: string, playerId: string, status: PlayerStatus): Promise<void> {
-    const MAX_ATTEMPTS = 4;
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      const state = await this.fetch(gameId);
-      if (state === undefined) return;
-      const player = state.players[playerId];
-      if (player === undefined) return;
-      const next: GameState = {
-        ...state,
-        revision: state.revision + 1,
-        players: {
-          ...state.players,
-          [playerId]: { ...player, status, lastSeenAt: this.env.clock.now() },
-        },
-      };
-      const { data, error } = await this.client
-        .from('rooms')
-        .update({ state: next, revision: next.revision })
-        .eq('game_id', gameId)
-        .eq('revision', state.revision)
-        .select();
-      if (!error && data !== null && data.length > 0) {
-        this.cache.set(gameId, next);
-        return;
-      }
-      // Lost the race (someone else advanced the revision): loop to re-read.
+  async updatePresence(gameId: string, _playerId: string, status: PlayerStatus): Promise<void> {
+    assertValidGameId(gameId);
+    await this.uid();
+    // The server authority resolves presence for the authenticated uid; the
+    // passed playerId is ignored (a caller may only update their own presence).
+    try {
+      await this.invoke({ kind: 'presence', gameId, status });
+    } catch {
+      /* presence is best-effort */
     }
   }
 
@@ -209,22 +168,5 @@ export class SupabaseTransport implements GameTransport {
     const state = (data as { state: GameState } | null)?.state;
     if (state !== undefined) this.cache.set(gameId, state);
     return state;
-  }
-
-  private async issueToken(gameId: string, playerId: string): Promise<string> {
-    const token = this.env.ids.next();
-    await this.client
-      .from('reclaim_tokens')
-      .insert({ token, game_id: gameId, player_id: playerId });
-    return token;
-  }
-
-  private async lookupToken(token: string): Promise<{ game_id: string; player_id: string } | null> {
-    const { data } = await this.client
-      .from('reclaim_tokens')
-      .select('game_id, player_id')
-      .eq('token', token)
-      .maybeSingle();
-    return (data as { game_id: string; player_id: string } | null) ?? null;
   }
 }

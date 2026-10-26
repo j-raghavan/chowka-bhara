@@ -61,8 +61,9 @@ npm run build     # static build to dist/
 
 The app is online-only and room-based. Create a room, then share its URL
 (`#/room/:gameId`) — friends open it to take a seat, or open it in a second
-browser tab to play yourself. Seat identity is per-tab (sessionStorage) and a
-reclaim token restores your seat after a refresh.
+browser tab to play yourself. Seat identity is per-tab: on the Supabase backend
+each tab holds its own anonymous-auth session (in sessionStorage), so a refresh
+keeps your seat while a second tab is a distinct player.
 
 The realtime backend is a swappable adapter behind one `GameTransport` port,
 selected at build time with `VITE_TRANSPORT`:
@@ -75,23 +76,35 @@ selected at build time with `VITE_TRANSPORT`:
 
 ### Supabase setup (cross-device play)
 
-1. Create a Supabase project and run the SQL in the header of
-   [`src/transport/supabase-transport.ts`](src/transport/supabase-transport.ts)
-   (the `rooms` and `reclaim_tokens` tables + RLS policies).
-2. Set build-time env (public anon key only — never the service-role key):
+The Supabase backend is **server-authoritative** (see
+[Security model](#security-model--trust-assumptions) and
+[ADR-0003](docs/adr/ADR-0003-server-authority-and-auth.md)): clients only read
+room state; all writes go through an Edge Function.
+
+1. Create a Supabase project and apply the migrations in
+   [`supabase/migrations/`](supabase/migrations) (base `rooms` table, locked-down
+   RLS — read-only for clients, no `reclaim_tokens`).
+2. Enable **Anonymous sign-ins** (Authentication → Providers) — player identity
+   is the anonymous-auth uid.
+3. Deploy the server authority: `supabase functions deploy command`
+   ([`supabase/functions/command`](supabase/functions/command)). It uses the
+   service-role key (auto-injected into Edge Functions — never shipped to the client).
+4. Set build-time env (public anon key only — never the service-role key):
    ```
    VITE_TRANSPORT=supabase
    VITE_SUPABASE_URL=https://<project>.supabase.co
    VITE_SUPABASE_ANON_KEY=<anon-public-key>
    ```
-3. Build and deploy. The Supabase client is loaded in a lazy chunk, so the
+5. Build and deploy. The Supabase client is loaded in a lazy chunk, so the
    default (`broadcast`) build never ships it.
 
-Verify the backend is wired correctly (checks tables, RLS, optimistic CAS,
-reclaim tokens, and realtime against your live project, then cleans up):
+Verify the backend is wired correctly **and hardened** — it asserts that a direct
+anon write is denied and `reclaim_tokens` is gone, and (with a service-role key)
+exercises the optimistic-CAS mechanics, the `command` function, and realtime:
 
 ```bash
-npm run verify:supabase   # reads creds from .env.local
+# reads creds from .env.local; set SUPABASE_SERVICE_ROLE_KEY to run write-path checks
+npm run verify:supabase
 ```
 
 Concurrency safety is identical across adapters: every command is applied through
@@ -128,6 +141,35 @@ The same rules are surfaced in-app via the Rules panel.
 The ruleset id is stored with every game, so an in-progress game keeps its rules even if a
 future variant becomes the default (CB8-FR4/FR6). The in-game **Rules** panel and the project's
 ADRs in [`docs/`](docs/) document the project-specific deviations from regional variants.
+
+## Security model & trust assumptions
+
+The rules engine is deterministic and the same `cas.ts` transaction guards every
+adapter, but **where that engine runs determines what a malicious client can do.**
+
+- **`broadcast` / `memory`** transports are local to one browser. There is no
+  shared server and no trust boundary — they are for same-browser play, dev, and
+  tests only. Do not treat them as multiplayer-secure.
+- **`supabase`** is **server-authoritative**. Clients may *read* room state (so
+  players and spectators can watch) but cannot write it: RLS denies all client
+  writes and every command is applied by the
+  [`command` Edge Function](supabase/functions/command), which runs the
+  authoritative reducer with the service-role key. Player identity is bound to an
+  anonymous-auth session — the uid *is* the playerId, and the function rejects any
+  command issued for a different player. See
+  [ADR-0003](docs/adr/ADR-0003-server-authority-and-auth.md).
+
+Boundary input is validated centrally in
+[`src/domain/validation.ts`](src/domain/validation.ts): display names are
+sanitised/clamped and room ids are restricted to a safe charset (also closing a
+realtime-filter injection vector). The shipped `VITE_SUPABASE_ANON_KEY` is a
+public client key and is safe to commit to a deployment; the service-role key is
+never bundled (a CI step greps `dist/` to enforce this).
+
+> ⚠️ Hardening only takes effect once **both** migrations are applied **and** the
+> `command` function is deployed. A project still running the old permissive
+> `using(true)` policy is fully tamperable. `npm run verify:supabase` asserts the
+> locked-down posture against your live project.
 
 ## License
 

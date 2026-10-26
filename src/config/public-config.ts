@@ -1,8 +1,9 @@
 /**
  * Public, non-secret runtime configuration (CB7-FR3/FR4). Only build-time
  * VITE_* values land here — never service-role or admin keys. The Supabase
- * anon key is a public client key and is safe to ship; row-level security on
- * the backend is what protects the data.
+ * anon key is a public client key and is safe to ship; row-level security plus
+ * the server-authority `command` Edge Function (the only writer) are what
+ * protect the data — see src/transport/supabase-transport.ts.
  */
 import type { DomainEnv } from '../domain/types';
 import type { GameTransport } from '../transport/game-transport';
@@ -24,6 +25,15 @@ function readSupabase(): PublicConfig['supabase'] {
 }
 
 const supabase = readSupabase();
+
+/** Per-tab auth storage (sessionStorage) if available, else SDK default. */
+function tabAuthStorage(): Storage | undefined {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
 
 export const publicConfig: PublicConfig = {
   // Default to cross-tab BrowserTransport so the app is "online" with zero infra.
@@ -48,8 +58,19 @@ export async function createTransport(env: DomainEnv): Promise<GameTransport> {
         import('@supabase/supabase-js'),
         import('../transport/supabase-transport'),
       ]);
-      const client = createClient(publicConfig.supabase.url, publicConfig.supabase.anonKey);
-      return new SupabaseTransport(env, client);
+      const tabStorage = tabAuthStorage();
+      const client = createClient(publicConfig.supabase.url, publicConfig.supabase.anonKey, {
+        // Per-tab auth: store the anonymous session in sessionStorage so two
+        // tabs are two distinct players (matching identity.ts) while a refresh
+        // keeps the seat. The auth uid is the player's identity.
+        auth: {
+          ...(tabStorage ? { storage: tabStorage } : {}),
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+        },
+      });
+      return new SupabaseTransport(client);
     }
     case 'broadcast':
     default:

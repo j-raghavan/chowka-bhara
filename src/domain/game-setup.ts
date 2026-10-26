@@ -1,5 +1,6 @@
 /** Room creation, deterministic side assignment, and pawn setup (CB5-FR5). */
 import { DEFAULT_7X7_CONFIG } from './config';
+import { sanitizeDisplayName } from './validation';
 import type { DomainEnv, GameState, Pawn, Player, PlayerSide } from './types';
 
 export const SIDE_COLORS: Readonly<Record<PlayerSide, string>> = {
@@ -31,7 +32,7 @@ export interface CreateRoomInput {
 /** Build a fresh lobby state with the host seated. */
 export function createInitialState(input: CreateRoomInput, env: DomainEnv): GameState {
   const now = env.clock.now();
-  const host = newSeat(input.hostId, input.hostName, 'south', now);
+  const host = newSeat(input.hostId, sanitizeDisplayName(input.hostName), 'south', now);
   return {
     schemaVersion: 1,
     gameId: input.gameId,

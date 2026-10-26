@@ -15,6 +15,10 @@ export default tseslint.config(
       '.claude-flow',
       'playwright-report',
       'test-results',
+      // Supabase Edge Functions are Deno (jsr:/https: imports, .ts extensions,
+      // Deno global). They are linted/typechecked by the Deno toolchain, not the
+      // app's browser-targeted ESLint/TS config.
+      'supabase',
     ],
   },
   {
